@@ -1,0 +1,139 @@
+@model Attendance_System.ViewModels.Attendance.AIPictureUploadViewModel
+@{
+    ViewData["Title"] = "AI Employee Check-in Scan";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="custom-card">
+            <h5 class="card-title mb-3"><i class="bi bi-cpu text-indigo me-1"></i> AI Employee Face Recognition Check-in</h5>
+            <p class="text-muted text-xs mb-4">Upload a snapshot containing an employee's face. The neural network will extract the facial embeddings and cross-reference them with registered biometric records in real-time.</p>
+
+            @if (Model.IsProcessed)
+            {
+                <div class="mb-4">
+                    @if (Model.IsSuccess)
+                    {
+                        <!-- Success Matching Result Card -->
+                        <div class="bg-success-subtle border border-success border-opacity-25 rounded-3 p-4 text-center">
+                            <div class="d-flex justify-content-center mb-3">
+                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="bi bi-check-lg fs-3"></i>
+                                </div>
+                            </div>
+                            <h4 class="fw-bold text-success mb-1">Face Recognition Success</h4>
+                            <p class="text-sm text-muted mb-4">@Model.Message</p>
+
+                            <div class="row g-3 justify-content-center align-items-center">
+                                <div class="col-sm-5">
+                                    <div class="scan-snapshot-wrapper border rounded-3 bg-dark overflow-hidden mx-auto" style="position: relative; max-width: 220px;">
+                                        <img src="@Model.UploadedImageUrl" alt="Captured Target" class="w-100" style="object-fit: cover; max-height: 220px;" />
+                                        <!-- Simulated Bounding Box Overlay -->
+                                        <div style="position: absolute; border: 2px solid #10B981; top: 25%; left: 30%; width: 40%; height: 50%; border-radius: 4px; box-sizing: border-box; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);">
+                                            <div style="position: absolute; top: -18px; left: -2px; background: #10B981; color: white; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold;">
+                                                Match @Model.Confidence%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 text-start">
+                                    <div class="p-3 bg-white rounded-3 border">
+                                        <div class="mb-2 text-xxs uppercase font-bold text-muted">Identified Candidate</div>
+                                        <h5 class="fw-bold text-primary mb-1">@Model.MatchedName</h5>
+                                        <span class="badge bg-secondary-subtle text-secondary border mb-3">Employee</span>
+
+                                        <div class="mb-2 text-xxs uppercase font-bold text-muted">Match confidence</div>
+                                        <div class="progress mb-1" style="height: 6px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: @Model.Confidence%;" aria-valuenow="@Model.Confidence" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div class="text-xxs text-end font-semibold text-success">@Model.Confidence% Confidence</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Failed Matching Result Card -->
+                        <div class="bg-danger-subtle border border-danger border-opacity-25 rounded-3 p-4 text-center">
+                            <div class="d-flex justify-content-center mb-3">
+                                <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="bi bi-exclamation-triangle fs-3"></i>
+                                </div>
+                            </div>
+                            <h4 class="fw-bold text-danger mb-1">Matching Failed</h4>
+                            <p class="text-sm text-muted mb-0">@Model.Message</p>
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-center gap-3">
+                    <a asp-action="UploadImage" class="btn btn-primary-custom px-4"><i class="bi bi-arrow-repeat me-1"></i> Scan Another Image</a>
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4"><i class="bi bi-journal-text me-1"></i> View Attendance Ledger</a>
+                </div>
+            }
+            else
+            {
+                <!-- Upload Form -->
+                <form asp-action="UploadImage" method="post" enctype="multipart/form-data" id="scanForm">
+                    <div class="form-group mb-4">
+                        <label class="form-label font-semibold">Select Target Snapshot File</label>
+                        <div class="upload-dropzone border rounded-3 p-5 text-center bg-light" style="border: 2px dashed #CBD5E1 !important; cursor: pointer;" onclick="document.getElementById('fileInput').click();">
+                            <i class="bi bi-cloud-arrow-up text-indigo mb-2" style="font-size: 3rem; display: block;"></i>
+                            <span class="fw-bold text-sm text-indigo">Browse Computer</span>
+                            <p class="text-xxs text-muted mt-1 mb-0">Supports PNG, JPG, JPEG (Max size: 5MB)</p>
+                            <input type="file" name="File" id="fileInput" class="d-none" accept="image/*" onchange="previewFile(this);" required />
+                        </div>
+                        <span asp-validation-for="File" class="text-danger text-xs"></span>
+                    </div>
+
+                    <!-- Scan Preview Container -->
+                    <div class="mb-4 d-none" id="previewContainer">
+                        <h6 class="fw-bold text-xs text-muted mb-2"><i class="bi bi-eye"></i> Snapshot Preview</h6>
+                        <div class="border rounded bg-light p-2 text-center" style="position: relative; display: inline-block;">
+                            <img id="imagePreview" src="#" alt="Upload Snapshot" style="max-height: 200px; max-width: 100%; border-radius: 4px;" />
+                            <!-- Scanning Animation Line -->
+                            <div class="scan-animation-line" style="position: absolute; left: 0; right: 0; height: 3px; background: rgba(99, 102, 241, 0.8); box-shadow: 0 0 10px #6366F1; animation: scanRadar 2s infinite ease-in-out; display: none;"></div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary px-4"><i class="bi bi-arrow-left me-1"></i> Cancel</a>
+                        <button type="submit" class="btn btn-primary-custom px-4" id="submitBtn"><i class="bi bi-cpu me-1"></i> Run Biometric Scan</button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+@@keyframes scanRadar {
+    0% { top: 0%; }
+    50% { top: 100%; }
+    100% { top: 0%; }
+}
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function previewFile(input) {
+            var file = input.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#imagePreview').attr('src', e.target.result);
+                    $('#previewContainer').removeClass('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        $('#scanForm').submit(function() {
+            // Show scanning radar overlay
+            $('.scan-animation-line').show();
+            $('#submitBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Running Biometrics...');
+        });
+    </script>
+}

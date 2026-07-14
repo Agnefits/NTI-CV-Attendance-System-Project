@@ -1,0 +1,57 @@
+@model Attendance_System.ViewModels.Camera.CameraFormViewModel
+@{
+    ViewData["Title"] = "Add Camera";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="custom-card">
+            <h5 class="card-title mb-4"><i class="bi bi-plus-circle me-1"></i> Register Camera Module</h5>
+            
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Title" class="form-label">Camera Title</label>
+                    <input asp-for="Title" class="form-control" placeholder="e.g. Main Entrance cam" />
+                    <span asp-validation-for="Title" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Location" class="form-label">Location (Physical)</label>
+                    <input asp-for="Location" class="form-control" placeholder="e.g. Building A, Main Entry Gate" />
+                    <span asp-validation-for="Location" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="ClassRoomId" class="form-label">Associated Classroom</label>
+                    <select asp-for="ClassRoomId" asp-items="Model.ClassRoomOptions" class="form-select">
+                        <option value="">-- Unassigned / General --</option>
+                    </select>
+                    <span asp-validation-for="ClassRoomId" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Key" class="form-label">Camera Signature / Key</label>
+                    <input asp-for="Key" class="form-control" placeholder="Unique key signature" />
+                    <span asp-validation-for="Key" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label asp-for="Notes" class="form-label">Additional Notes</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Optional settings or configurations..."></textarea>
+                    <span asp-validation-for="Notes" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4"><i class="bi bi-arrow-left me-1"></i> Cancel</a>
+                    <button type="submit" class="btn btn-primary-custom px-4"><i class="bi bi-check-lg me-1"></i> Register Camera</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

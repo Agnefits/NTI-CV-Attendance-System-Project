@@ -1,0 +1,72 @@
+@model Attendance_System.ViewModels.AdminUser.AdminUserFilterViewModel
+@{
+    ViewData["Title"] = "Administrator Accounts";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="text-muted font-medium mb-0">System Administrators</h5>
+    <a asp-action="Create" class="btn btn-primary-custom"><i class="bi bi-plus-lg me-1"></i> Add Administrator</a>
+</div>
+
+<!-- Filters Panel -->
+<div class="custom-card mb-4">
+    <form asp-action="Index" method="get" class="row g-3 align-items-end">
+        <div class="col-md-6 form-group">
+            <label class="form-label" for="SearchQuery">Search Administrator</label>
+            <input type="text" asp-for="SearchQuery" class="form-control" placeholder="Search by name, username or email..." />
+        </div>
+        <div class="col-md-5 form-group">
+            <label class="form-label" for="BranchId">Branch context</label>
+            <select asp-for="BranchId" asp-items="Model.BranchOptions" class="form-select">
+                <option value="">-- All Branches --</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary-custom w-100"><i class="bi bi-funnel-fill"></i></button>
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="table-responsive-custom">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Branch Context</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Results.Any())
+                {
+                    foreach (var admin in Model.Results)
+                    {
+                        <tr>
+                            <td class="fw-bold">@admin.Fullname</td>
+                            <td><code class="text-secondary bg-light p-1 rounded">@admin.Username</code></td>
+                            <td>@(admin.Email ?? "-")</td>
+                            <td>@(admin.PhoneNumber ?? "-")</td>
+                            <td><span class="badge bg-primary-subtle text-primary border border-primary">@admin.BranchName</span></td>
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@admin.Id" class="btn btn-sm btn-outline-secondary px-3"><i class="bi bi-pencil-square me-1"></i> Edit</a>
+                                <form asp-action="Delete" asp-route-id="@admin.Id" method="post" onsubmit="return confirm('Are you sure you want to delete this administrator?');" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger px-3"><i class="bi bi-trash me-1"></i> Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No administrator accounts found matching criteria.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

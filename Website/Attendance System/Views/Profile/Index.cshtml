@@ -1,0 +1,60 @@
+@model Attendance_System.ViewModels.Profile.ProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="row">
+    <!-- Profile Info Card -->
+    <div class="col-lg-7 mb-4">
+        <div class="custom-card">
+            <h5 class="card-title">Profile Details</h5>
+            <div class="d-flex flex-column align-items-center text-center pb-4 mb-3 border-bottom">
+                <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/img/avatar-default.png" : Model.ImageUrl)" 
+                     alt="Avatar" class="rounded-circle img-thumbnail mb-3" 
+                     style="width: 120px; height: 120px; object-fit: cover;" 
+                     onerror="this.src='/img/avatar-default.png'" />
+                <h4 class="fw-bold mb-1">@Model.Fullname</h4>
+                <span class="badge bg-primary-subtle text-primary border border-primary px-3 py-1.5 rounded-pill uppercase">@Model.Role</span>
+            </div>
+
+            <div class="row g-3 text-sm">
+                <div class="col-sm-4 text-muted font-medium">Username</div>
+                <div class="col-sm-8 fw-semibold">@Model.Username</div>
+
+                <div class="col-sm-4 text-muted font-medium">Email Address</div>
+                <div class="col-sm-8 fw-semibold">@(Model.Email ?? "Not provided")</div>
+
+                <div class="col-sm-4 text-muted font-medium">Phone Number</div>
+                <div class="col-sm-8 fw-semibold">@(Model.PhoneNumber ?? "Not provided")</div>
+            </div>
+
+            <div class="text-end mt-4">
+                <a asp-action="Edit" class="btn btn-primary-custom px-4"><i class="bi bi-pencil-square me-2"></i> Edit Details</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Change Card -->
+    <div class="col-lg-5 mb-4">
+        <div class="custom-card">
+            <h5 class="card-title">Change Password</h5>
+            <form asp-action="ChangePassword" method="post">
+                <div class="form-group mb-3">
+                    <label class="form-label" for="CurrentPassword">Current Password</label>
+                    <input type="password" name="CurrentPassword" id="CurrentPassword" class="form-control" required />
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label" for="NewPassword">New Password</label>
+                    <input type="password" name="NewPassword" id="NewPassword" class="form-control" required />
+                </div>
+                <div class="form-group mb-4">
+                    <label class="form-label" for="ConfirmNewPassword">Confirm New Password</label>
+                    <input type="password" name="ConfirmNewPassword" id="ConfirmNewPassword" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-outline-danger w-100 py-2">
+                    <i class="bi bi-key-fill me-2"></i> Update Password
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

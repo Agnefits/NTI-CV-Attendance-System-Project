@@ -1,0 +1,91 @@
+@model Attendance_System.ViewModels.Lesson.LessonFormViewModel
+@{
+    ViewData["Title"] = "Add Lesson";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="custom-card">
+            <h5 class="card-title mb-4"><i class="bi bi-plus-circle me-1"></i> Add New Lesson Assignment</h5>
+            
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="LevelId" class="form-label">Academic Level</label>
+                    <select asp-for="LevelId" asp-items="Model.LevelOptions" class="form-select">
+                        <option value="">-- Select Level --</option>
+                    </select>
+                    <span asp-validation-for="LevelId" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="ClassId" class="form-label">Class</label>
+                    <select asp-for="ClassId" asp-items="Model.ClassOptions" class="form-select">
+                        <option value="">-- General / Seminar (Optional) --</option>
+                    </select>
+                    <span asp-validation-for="ClassId" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="TeacherId" class="form-label">Teacher</label>
+                    <select asp-for="TeacherId" asp-items="Model.TeacherOptions" class="form-select">
+                        <option value="">-- Select Teacher --</option>
+                    </select>
+                    <span asp-validation-for="TeacherId" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="ClassRoomId" class="form-label">Classroom</label>
+                    <select asp-for="ClassRoomId" asp-items="Model.ClassRoomOptions" class="form-select">
+                        <option value="">-- Select Classroom (Optional) --</option>
+                    </select>
+                    <span asp-validation-for="ClassRoomId" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6 form-group">
+                        <label asp-for="StartTime" class="form-label"></label>
+                        <input asp-for="StartTime" type="time" class="form-control" />
+                        <span asp-validation-for="StartTime" class="text-danger text-xs"></span>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label asp-for="EndTime" class="form-label"></label>
+                        <input asp-for="EndTime" type="time" class="form-control" />
+                        <span asp-validation-for="EndTime" class="text-danger text-xs"></span>
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="DayOfWeek" class="form-label">Day of Week</label>
+                    <select asp-for="DayOfWeek" asp-items="Model.DayOfWeekOptions" class="form-select">
+                        <option value="">-- Select Day --</option>
+                    </select>
+                    <span asp-validation-for="DayOfWeek" class="text-danger text-xs"></span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6 form-group">
+                        <label asp-for="StartDate" class="form-label">Start Date</label>
+                        <input asp-for="StartDate" type="date" class="form-control" />
+                        <span asp-validation-for="StartDate" class="text-danger text-xs"></span>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label asp-for="EndDate" class="form-label">End Date</label>
+                        <input asp-for="EndDate" type="date" class="form-control" />
+                        <span asp-validation-for="EndDate" class="text-danger text-xs"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4"><i class="bi bi-arrow-left me-1"></i> Cancel</a>
+                    <button type="submit" class="btn btn-primary-custom px-4"><i class="bi bi-check-lg me-1"></i> Create Lesson</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

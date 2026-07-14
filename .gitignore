@@ -1,0 +1,99 @@
+# ============================================================
+# .gitignore — NTI CV Attendance System Project
+# Scoped rules: Website/ (ASP.NET Core / .NET 9) only
+# ============================================================
+
+# -------------------------------------------------------
+# .NET / MSBuild build output
+# -------------------------------------------------------
+Website/**/bin/
+Website/**/obj/
+
+# -------------------------------------------------------
+# Visual Studio / Rider / VS Code artifacts
+# -------------------------------------------------------
+Website/**/.vs/
+Website/**/*.user
+Website/**/*.suo
+Website/**/*.userprefs
+Website/**/*.pidb
+Website/**/*.sln.docstates
+Website/**/launchSettings.json
+
+# -------------------------------------------------------
+# NuGet packages (restored automatically, never commit)
+# -------------------------------------------------------
+Website/**/packages/
+Website/**/*.nupkg
+Website/**/*.snupkg
+Website/**/project.lock.json
+Website/**/project.fragment.lock.json
+Website/**/artifacts/
+
+# -------------------------------------------------------
+# ASP.NET Core runtime & published output
+# -------------------------------------------------------
+Website/**/publish/
+Website/**/**/wwwroot/lib/      # Restored by LibMan / npm
+Website/**/**/node_modules/
+Website/**/.sass-cache/
+Website/**/*.min.css
+Website/**/*.min.js
+Website/**/bundleconfig.json.bak
+
+# -------------------------------------------------------
+# EF Core database files (local SQLite, if used)
+# -------------------------------------------------------
+Website/**/*.db
+Website/**/*.db-shm
+Website/**/*.db-wal
+Website/**/*.sqlite
+
+# -------------------------------------------------------
+# App Secrets / Sensitive config
+# -------------------------------------------------------
+Website/**/appsettings.Development.json
+Website/**/appsettings.Production.json
+Website/**/secrets.json
+Website/**/.env
+Website/**/.env.*
+
+# -------------------------------------------------------
+# Logs & temporary files
+# -------------------------------------------------------
+Website/**/Logs/
+Website/**/log/
+Website/**/*.log
+Website/**/tmp/
+Website/**/temp/
+
+# -------------------------------------------------------
+# Uploaded user files / attendance scan images
+# -------------------------------------------------------
+Website/**/wwwroot/attendance_scans/*
+!Website/**/wwwroot/attendance_scans/.gitkeep
+Website/**/wwwroot/uploads/*
+!Website/**/wwwroot/uploads/.gitkeep
+
+# -------------------------------------------------------
+# OS-specific junk
+# -------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# -------------------------------------------------------
+# JetBrains IDEs (Rider)
+# -------------------------------------------------------
+.idea/
+
+# -------------------------------------------------------
+# Keep placeholder files in otherwise-empty tracked dirs
+# -------------------------------------------------------
+!.gitkeep
