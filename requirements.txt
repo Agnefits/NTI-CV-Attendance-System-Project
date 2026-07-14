@@ -1,5 +1,6 @@
 cmake
-face-recognition
+dlib-bin
 opencv-python
 numpy
 schedule
+mediapipe
