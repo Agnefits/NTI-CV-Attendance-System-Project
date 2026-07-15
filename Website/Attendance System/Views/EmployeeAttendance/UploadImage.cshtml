@@ -24,29 +24,49 @@
                             <h4 class="fw-bold text-success mb-1">Face Recognition Success</h4>
                             <p class="text-sm text-muted mb-4">@Model.Message</p>
 
-                            <div class="row g-3 justify-content-center align-items-center">
-                                <div class="col-sm-5">
-                                    <div class="scan-snapshot-wrapper border rounded-3 bg-dark overflow-hidden mx-auto" style="position: relative; max-width: 220px;">
-                                        <img src="@Model.UploadedImageUrl" alt="Captured Target" class="w-100" style="object-fit: cover; max-height: 220px;" />
-                                        <!-- Simulated Bounding Box Overlay -->
-                                        <div style="position: absolute; border: 2px solid #10B981; top: 25%; left: 30%; width: 40%; height: 50%; border-radius: 4px; box-sizing: border-box; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);">
-                                            <div style="position: absolute; top: -18px; left: -2px; background: #10B981; color: white; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold;">
-                                                Match @Model.Confidence%
-                                            </div>
-                                        </div>
+                            <div class="row g-3 justify-content-center align-items-stretch">
+                                <div class="col-sm-6 d-flex align-items-center">
+                                    <div class="scan-snapshot-wrapper border rounded-3 bg-dark overflow-hidden mx-auto w-100" style="position: relative; max-width: 320px;">
+                                        <img src="@Model.UploadedImageUrl" alt="Captured Target" class="w-100 h-100" style="object-fit: contain; max-height: 320px;" />
+                                        
+                                        <!-- Bounding Box Overlays -->
+                                        @foreach (var candidate in Model.Matches)
+                                        {
+                                            @if (candidate.BoundingBox != null && candidate.BoundingBox.Length == 4)
+                                            {
+                                                var left = candidate.BoundingBox[0];
+                                                var top = candidate.BoundingBox[1];
+                                                var width = candidate.BoundingBox[2] - candidate.BoundingBox[0];
+                                                var height = candidate.BoundingBox[3] - candidate.BoundingBox[1];
+
+                                                <div style="position: absolute; border: 2px solid #10B981; top: @(top.ToString("F1"))%; left: @(left.ToString("F1"))%; width: @(width.ToString("F1"))%; height: @(height.ToString("F1"))%; border-radius: 4px; box-sizing: border-box; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4), 0 0 8px rgba(16, 185, 129, 0.8);">
+                                                    <div style="position: absolute; top: -18px; left: -2px; background: #10B981; color: white; padding: 1px 4px; font-size: 8px; border-radius: 2px; font-weight: bold; white-space: nowrap;">
+                                                        @candidate.Name (@candidate.Confidence.ToString("F1")%)
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
                                     </div>
                                 </div>
-                                <div class="col-sm-6 text-start">
-                                    <div class="p-3 bg-white rounded-3 border">
-                                        <div class="mb-2 text-xxs uppercase font-bold text-muted">Identified Candidate</div>
-                                        <h5 class="fw-bold text-primary mb-1">@Model.MatchedName</h5>
-                                        <span class="badge bg-secondary-subtle text-secondary border mb-3">Employee</span>
-
-                                        <div class="mb-2 text-xxs uppercase font-bold text-muted">Match confidence</div>
-                                        <div class="progress mb-1" style="height: 6px;">
-                                            <div class="progress-bar bg-success" role="progressbar" style="width: @Model.Confidence%;" aria-valuenow="@Model.Confidence" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                        <div class="text-xxs text-end font-semibold text-success">@Model.Confidence% Confidence</div>
+                                <div class="col-sm-6 text-start d-flex align-items-center">
+                                    <div class="p-3 bg-white rounded-3 border w-100 h-100 overflow-y-auto" style="max-height: 320px;">
+                                        <div class="mb-3 text-xxs uppercase font-bold text-muted border-bottom pb-2">Identified Candidates (@Model.Matches.Count)</div>
+                                        
+                                        @foreach (var candidate in Model.Matches.OrderByDescending(c => c.Confidence))
+                                        {
+                                            <div class="mb-3 p-2 bg-light border rounded">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="fw-bold text-primary mb-0">@candidate.Name</h6>
+                                                    <span class="badge bg-secondary-subtle text-secondary border">@candidate.Role</span>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <div class="progress mb-1" style="height: 4px;">
+                                                        <div class="progress-bar bg-success" role="progressbar" style="width: @candidate.Confidence%;" aria-valuenow="@candidate.Confidence" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                    <div class="text-xxs text-end font-semibold text-success">@candidate.Confidence.ToString("F1")% Confidence</div>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>

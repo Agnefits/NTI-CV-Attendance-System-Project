@@ -33,19 +33,55 @@ namespace Attendance_System.Controllers
                     Value = s.Value,
                     Description = s.Key switch
                     {
-                        "AttendanceStartTime" => "The hour marking daily start (e.g. 08:00)",
-                        "LateGracePeriodMinutes" => "Grace period minutes before a student is flagged LATE",
-                        "SecurityThreshold" => "Face recognition similarity match confidence percentage",
-                        "EmailNotifyAbsences" => "Enable automatic warnings emails to parent/user on absences",
+                        // General
+                        "MinAttendancePercentage"   => "Minimum attendance percentage required to pass (%)",
+                        "SystemName"               => "Display name of the system shown in the UI",
+                        "AllowLateArrivals"        => "Whether late arrivals are recorded or rejected",
+
+                        // Attendance Rules
+                        "AttendanceStartTime"      => "Daily start hour marking the opening of attendance (e.g. 08:00)",
+                        "LateGracePeriodMinutes"   => "Grace period minutes before a student is flagged LATE",
+                        "EmailNotifyAbsences"      => "Send automatic warning emails on absences (True/False)",
+
+                        // Employee Check-In / Check-Out Windows
+                        "EmployeeCheckInStart"     => "Earliest time employees may check in (e.g. 07:30)",
+                        "EmployeeCheckInEnd"       => "Latest time employees may check in (e.g. 09:30)",
+                        "EmployeeCheckOutStart"    => "Earliest time employees may check out (e.g. 15:00)",
+                        "EmployeeCheckOutEnd"      => "Latest time employees may check out (e.g. 19:00)",
+
+                        // AI Recognition
+                        "AIModelVersion"           => "Face recognition model version identifier (e.g. CVFaceRecoV1)",
+                        "AIModelSecretKey"         => "Secret API key sent to the AI microservice for authentication",
+                        "AIServiceBaseUrl"         => "Base URL of the Python FastAPI face recognition service",
+                        "SecurityThreshold"        => "Minimum cosine similarity score to accept a face match (0.0–1.0)",
+                        "MinEmbeddingQuality"      => "Minimum quality score for an embedding to be stored (0.0–1.0)",
+                        "LivenessDetectionEnabled" => "Enable liveness/anti-spoofing check before recognition (True/False)",
+
                         _ => "System configuration setting"
                     },
                     Group = s.Key switch
                     {
-                        "AttendanceStartTime" => "Attendance Rules",
-                        "LateGracePeriodMinutes" => "Attendance Rules",
-                        "SecurityThreshold" => "AI Recognition Settings",
-                        "EmailNotifyAbsences" => "General System",
-                        _ => "General System"
+                        "MinAttendancePercentage"   => "General",
+                        "SystemName"               => "General",
+                        "AllowLateArrivals"        => "General",
+
+                        "AttendanceStartTime"      => "Attendance Rules",
+                        "LateGracePeriodMinutes"   => "Attendance Rules",
+                        "EmailNotifyAbsences"      => "Attendance Rules",
+
+                        "EmployeeCheckInStart"     => "Employee Time Windows",
+                        "EmployeeCheckInEnd"       => "Employee Time Windows",
+                        "EmployeeCheckOutStart"    => "Employee Time Windows",
+                        "EmployeeCheckOutEnd"      => "Employee Time Windows",
+
+                        "AIModelVersion"           => "AI Recognition Settings",
+                        "AIModelSecretKey"         => "AI Recognition Settings",
+                        "AIServiceBaseUrl"         => "AI Recognition Settings",
+                        "SecurityThreshold"        => "AI Recognition Settings",
+                        "MinEmbeddingQuality"      => "AI Recognition Settings",
+                        "LivenessDetectionEnabled" => "AI Recognition Settings",
+
+                        _ => "General"
                     }
                 }).ToList()
             };

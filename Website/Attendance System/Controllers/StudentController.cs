@@ -138,8 +138,14 @@ namespace Attendance_System.Controllers
         [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> Create(StudentFormViewModel model)
         {
+            // Detect if the view is requesting a JSON response (2-step enroll flow)
+            bool wantsJson = Request.Form.ContainsKey("returnJson");
+
             if (!ModelState.IsValid)
             {
+                if (wantsJson)
+                    return Json(new { success = false, errors = ModelState.Values
+                        .SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList() });
                 await PopulateDropdowns(model);
                 return View(model);
             }
@@ -149,6 +155,8 @@ namespace Attendance_System.Controllers
             if (existingUser != null)
             {
                 ModelState.AddModelError(nameof(model.Username), "Username is already in use.");
+                if (wantsJson)
+                    return Json(new { success = false, errors = new[] { "Username is already in use." } });
                 await PopulateDropdowns(model);
                 return View(model);
             }
@@ -171,6 +179,10 @@ namespace Attendance_System.Controllers
 
             await _unitOfWork.Students.AddAsync(student);
             await _unitOfWork.SaveChangesAsync();
+
+            // Return JSON with the new student's ID so the enroll panel can use it
+            if (wantsJson)
+                return Json(new { success = true, userId = student.Id });
 
             TempData["SuccessMessage"] = "Student registered successfully.";
             return RedirectToAction(nameof(Index));

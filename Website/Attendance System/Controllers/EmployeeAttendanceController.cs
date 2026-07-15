@@ -20,11 +20,13 @@ namespace Attendance_System.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFileService _fileService;
+        private readonly IFaceAIService _faceAIService;
 
-        public EmployeeAttendanceController(IUnitOfWork unitOfWork, IFileService fileService)
+        public EmployeeAttendanceController(IUnitOfWork unitOfWork, IFileService fileService, IFaceAIService faceAIService)
         {
             _unitOfWork = unitOfWork;
             _fileService = fileService;
+            _faceAIService = faceAIService;
         }
 
         [HttpGet]
@@ -306,42 +308,159 @@ namespace Attendance_System.Controllers
                 return View(model);
             }
 
+            string base64Image = "";
+            using (var ms = new System.IO.MemoryStream())
+            {
+                await model.File.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+                base64Image = Convert.ToBase64String(bytes);
+            }
+
             string imageUrl = await _fileService.UploadFileAsync(model.File, "attendance_scans");
 
             var employees = await _unitOfWork.Employees.GetAllAsync();
-            if (!employees.Any())
+            var employeeIds = employees.Select(e => e.Id).ToHashSet();
+            var embeddings = await _unitOfWork.FaceEmbeddings.FindAsync(e => employeeIds.Contains(e.BaseUserId));
+            var knownEmbeddings = embeddings.Select(e => new EmbeddingRecord
+            {
+                UserId        = e.BaseUserId,
+                EmbeddingJson = e.EmbeddingJson
+            }).ToList();
+
+            if (!knownEmbeddings.Any())
             {
                 model.IsProcessed = true;
                 model.IsSuccess = false;
-                model.Message = "No employee embeddings found in system to match.";
+                model.Message = "No employee face embeddings registered in the system.";
                 return View(model);
             }
 
-            var random = new Random();
-            var matchedEmp = employees.ElementAt(random.Next(employees.Count()));
+            // Run face recognition using real AI service
+            var matches = await _faceAIService.RecognizeFacesAsync(base64Image, knownEmbeddings);
+
+            // Retrieve security/confidence threshold from settings
+            var thresholdSettings = await _unitOfWork.Settings.FindAsync(s => s.Key == "SecurityThreshold");
+            float threshold = 0.40f;
+            if (thresholdSettings.FirstOrDefault() is { } ts && float.TryParse(ts.Value, out var t))
+                threshold = t;
+
+            var confidentMatches = matches?.Where(m => m.Confidence >= threshold).ToList() ?? new List<FaceMatch>();
+
+            if (!confidentMatches.Any())
+            {
+                model.IsProcessed = true;
+                model.IsSuccess = false;
+                model.UploadedImageUrl = imageUrl;
+                model.Message = "No recognized employee faces matching the uploaded image (or confidence score is too low).";
+                ViewData["Title"] = "AI Employee Check-in Scan";
+                return View(model);
+            }
+
+            var now = DateTime.Now;
+            var nowTime = now.TimeOfDay;
+            var today = now.Date;
+
+            // Load settings for employee check-in/out windows
+            var allSettings = await _unitOfWork.Settings.GetAllAsync();
+            TimeSpan ParseTime(string key, string fallback) =>
+                TimeSpan.TryParse(allSettings.FirstOrDefault(s => s.Key == key)?.Value ?? fallback, out var ts) ? ts : TimeSpan.Parse(fallback);
+
+            var checkInStart  = ParseTime("EmployeeCheckInStart",  "07:30");
+            var checkInEnd    = ParseTime("EmployeeCheckInEnd",    "09:30");
+            var checkOutStart = ParseTime("EmployeeCheckOutStart", "15:00");
+            var checkOutEnd   = ParseTime("EmployeeCheckOutEnd",   "19:00");
+
+            bool isCheckIn  = nowTime >= checkInStart  && nowTime <= checkInEnd;
+            bool isCheckOut = nowTime >= checkOutStart && nowTime <= checkOutEnd;
+
+            if (!isCheckIn && !isCheckOut)
+            {
+                model.IsProcessed = true;
+                model.IsSuccess = false;
+                model.UploadedImageUrl = imageUrl;
+                model.Message = "Outside check-in and check-out time windows. No attendance recorded.";
+                ViewData["Title"] = "AI Employee Check-in Scan";
+                return View(model);
+            }
 
             var currentUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             Guid? loggedBy = Guid.TryParse(currentUserIdStr, out Guid logId) ? logId : null;
 
-            var record = new EmployeeAttendance
+            int recorded = 0;
+            foreach (var match in confidentMatches)
             {
-                EmployeeId = matchedEmp.Id,
-                Status = AttendanceStatus.Present,
-                ByIA = true,
-                Note = "Detected via AI face snapshot recognition upload console.",
-                CreatedBy = loggedBy,
-                ModifiedBy = loggedBy
-            };
+                var matchedEmp = employees.FirstOrDefault(e => e.Id == match.UserId);
+                if (matchedEmp is null) continue;
 
-            await _unitOfWork.EmployeeAttendances.AddAsync(record);
-            await _unitOfWork.SaveChangesAsync();
+                // Find or create today's record for this employee
+                var existing = (await _unitOfWork.EmployeeAttendances.FindAsync(a =>
+                    a.EmployeeId == matchedEmp.Id &&
+                    a.AttendanceDate == today)).FirstOrDefault();
 
+                if (isCheckIn)
+                {
+                    if (existing is null)
+                    {
+                        var record = new EmployeeAttendance
+                        {
+                            EmployeeId             = matchedEmp.Id,
+                            AttendanceDate         = today,
+                            CheckInTime            = nowTime,
+                            Status                 = AttendanceStatus.Present,
+                            ByIA                   = true,
+                            CreatedBy              = loggedBy,
+                            ModifiedBy             = loggedBy,
+                            RecognitionConfidence  = match.Confidence,
+                            Note                   = "Detected via AI face snapshot upload scan."
+                        };
+                        await _unitOfWork.EmployeeAttendances.AddAsync(record);
+                        recorded++;
+                    }
+                }
+                else if (isCheckOut && existing is not null && existing.CheckOutTime is null)
+                {
+                    existing.CheckOutTime           = nowTime;
+                    existing.RecognitionConfidence  = match.Confidence;
+                    existing.ModifiedBy             = loggedBy;
+                    _unitOfWork.EmployeeAttendances.Update(existing);
+                    recorded++;
+                }
+
+                model.Matches.Add(new MatchedCandidateViewModel
+                {
+                    Name = matchedEmp.Fullname,
+                    Confidence = Math.Round(match.Confidence * 100.0, 1),
+                    BoundingBox = match.BoundingBox,
+                    Role = "Employee"
+                });
+            }
+
+            if (recorded > 0)
+            {
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            if (!model.Matches.Any())
+            {
+                model.IsProcessed = true;
+                model.IsSuccess = false;
+                model.UploadedImageUrl = imageUrl;
+                model.Message = "No registered employees identified in this image.";
+                ViewData["Title"] = "AI Employee Check-in Scan";
+                return View(model);
+            }
+
+            // Set backward compatible fields to the best match
+            var bestMatch = model.Matches.OrderByDescending(m => m.Confidence).First();
+            model.MatchedName = bestMatch.Name;
+            model.Confidence = bestMatch.Confidence;
+            model.BoundingBox = bestMatch.BoundingBox;
+
+            string eventType = isCheckIn ? "check-in" : "check-out";
             model.IsProcessed = true;
             model.IsSuccess = true;
-            model.MatchedName = matchedEmp.Fullname;
-            model.Confidence = Math.Round(93.8 + random.NextDouble() * 5.7, 1);
             model.UploadedImageUrl = imageUrl;
-            model.Message = $"Face recognized successfully: {matchedEmp.Fullname}. Attendance has been marked Present.";
+            model.Message = $"Recognized {model.Matches.Count} face(s) successfully. Employee {eventType} recorded for {recorded} employee(s).";
 
             ViewData["Title"] = "AI Employee Check-in Scan";
             return View(model);

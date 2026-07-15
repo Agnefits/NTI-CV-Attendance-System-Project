@@ -20,7 +20,25 @@ namespace Attendance_System.Models.Entities
         
         public Guid EmployeeId { get; set; }
         public virtual Employee? Employee { get; set; }
-        
+
+        /// <summary>The calendar date this attendance record belongs to.</summary>
+        public DateTime AttendanceDate { get; set; } = DateTime.UtcNow.Date;
+
+        /// <summary>
+        /// Time the employee checked in (from camera or manual).
+        /// Null if not yet checked in.
+        /// </summary>
+        public TimeSpan? CheckInTime { get; set; }
+
+        /// <summary>
+        /// Time the employee checked out (from camera or manual).
+        /// Null if not yet checked out.
+        /// </summary>
+        public TimeSpan? CheckOutTime { get; set; }
+
+        /// <summary>AI-reported confidence score for the face match (0.0 – 1.0).</summary>
+        public float? RecognitionConfidence { get; set; }
+
         public string? Note { get; set; }
     }
 }

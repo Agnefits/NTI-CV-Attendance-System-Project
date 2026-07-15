@@ -151,11 +151,34 @@ namespace Attendance_System.Data
             // 8. Seed Settings
             if (!await context.Settings.AnyAsync())
             {
-                var setting1 = new Setting { Key = "MinAttendancePercentage", Value = "75" };
-                var setting2 = new Setting { Key = "SystemName", Value = "AI Attendance System" };
-                var setting3 = new Setting { Key = "AllowLateArrivals", Value = "True" };
+                var settings = new List<Setting>
+                {
+                    // --- General ---
+                    new Setting { Key = "MinAttendancePercentage",    Value = "75" },
+                    new Setting { Key = "SystemName",                 Value = "AI Attendance System" },
+                    new Setting { Key = "AllowLateArrivals",          Value = "True" },
 
-                await context.Settings.AddRangeAsync(setting1, setting2, setting3);
+                    // --- Attendance Rules ---
+                    new Setting { Key = "AttendanceStartTime",        Value = "08:00" },
+                    new Setting { Key = "LateGracePeriodMinutes",     Value = "15" },
+                    new Setting { Key = "EmailNotifyAbsences",        Value = "False" },
+
+                    // --- Employee Check-In / Check-Out Windows ---
+                    new Setting { Key = "EmployeeCheckInStart",       Value = "07:30" },
+                    new Setting { Key = "EmployeeCheckInEnd",         Value = "09:30" },
+                    new Setting { Key = "EmployeeCheckOutStart",      Value = "15:00" },
+                    new Setting { Key = "EmployeeCheckOutEnd",        Value = "19:00" },
+
+                    // --- AI / Face Recognition ---
+                    new Setting { Key = "AIModelVersion",             Value = "CVFaceRecoV1" },
+                    new Setting { Key = "AIModelSecretKey",           Value = "change-me-in-production-key-1234" },
+                    new Setting { Key = "AIServiceBaseUrl",           Value = "http://localhost:8000" },
+                    new Setting { Key = "SecurityThreshold",          Value = "0.40" },
+                    new Setting { Key = "MinEmbeddingQuality",        Value = "0.60" },
+                    new Setting { Key = "LivenessDetectionEnabled",   Value = "False" },
+                };
+
+                await context.Settings.AddRangeAsync(settings);
                 await context.SaveChangesAsync();
             }
         }

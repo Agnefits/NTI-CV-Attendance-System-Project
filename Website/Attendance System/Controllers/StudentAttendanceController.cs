@@ -19,11 +19,13 @@ namespace Attendance_System.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFileService _fileService;
+        private readonly IFaceAIService _faceAIService;
 
-        public StudentAttendanceController(IUnitOfWork unitOfWork, IFileService fileService)
+        public StudentAttendanceController(IUnitOfWork unitOfWork, IFileService fileService, IFaceAIService faceAIService)
         {
             _unitOfWork = unitOfWork;
             _fileService = fileService;
+            _faceAIService = faceAIService;
         }
 
         [HttpGet]
@@ -341,46 +343,135 @@ namespace Attendance_System.Controllers
                 return View(model);
             }
 
+            string base64Image = "";
+            using (var ms = new System.IO.MemoryStream())
+            {
+                await model.File.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+                base64Image = Convert.ToBase64String(bytes);
+            }
+
             string imageUrl = await _fileService.UploadFileAsync(model.File, "attendance_scans");
 
             var students = await _unitOfWork.Students.GetAllAsync();
-            if (!students.Any())
+            var studentIds = students.Select(s => s.Id).ToHashSet();
+            var embeddings = await _unitOfWork.FaceEmbeddings.FindAsync(e => studentIds.Contains(e.BaseUserId));
+            var knownEmbeddings = embeddings.Select(e => new EmbeddingRecord
+            {
+                UserId        = e.BaseUserId,
+                EmbeddingJson = e.EmbeddingJson
+            }).ToList();
+
+            if (!knownEmbeddings.Any())
             {
                 model.IsProcessed = true;
                 model.IsSuccess = false;
-                model.Message = "No student embeddings found in system to match.";
+                model.Message = "No student face embeddings registered in the system.";
                 return View(model);
             }
 
-            var random = new Random();
-            var matchedStudent = students.ElementAt(random.Next(students.Count()));
+            // Run face recognition using real AI service
+            var matches = await _faceAIService.RecognizeFacesAsync(base64Image, knownEmbeddings);
+
+            // Retrieve security/confidence threshold from settings
+            var thresholdSettings = await _unitOfWork.Settings.FindAsync(s => s.Key == "SecurityThreshold");
+            float threshold = 0.40f;
+            if (thresholdSettings.FirstOrDefault() is { } ts && float.TryParse(ts.Value, out var t))
+                threshold = t;
+
+            var confidentMatches = matches?.Where(m => m.Confidence >= threshold).ToList() ?? new List<FaceMatch>();
+
+            if (!confidentMatches.Any())
+            {
+                model.IsProcessed = true;
+                model.IsSuccess = false;
+                model.UploadedImageUrl = imageUrl;
+                model.Message = "No recognized student faces matching the uploaded image (or confidence score is too low).";
+                ViewData["Title"] = "AI Student Check-in Scan";
+                return View(model);
+            }
 
             var currentUserIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             Guid? loggedBy = Guid.TryParse(currentUserIdStr, out Guid logId) ? logId : null;
 
-            var lessons = await _unitOfWork.Lessons.GetAllAsync();
-            var activeLesson = lessons.FirstOrDefault(l => l.ClassId == matchedStudent.ClassId && l.DayOfWeek == DateTime.Today.DayOfWeek);
+            var now = DateTime.Now;
+            var nowTime = now.TimeOfDay;
+            var nowDay = now.DayOfWeek;
 
-            var record = new StudentAttendance
+            int recorded = 0;
+            foreach (var match in confidentMatches)
             {
-                StudentId = matchedStudent.Id,
-                Status = AttendanceStatus.Present,
-                ByIA = true,
-                LessonId = activeLesson?.Id,
-                Note = "Detected via AI face snapshot recognition upload console.",
-                CreatedBy = loggedBy,
-                ModifiedBy = loggedBy
-            };
+                var matchedStudent = students.FirstOrDefault(s => s.Id == match.UserId);
+                if (matchedStudent is null) continue;
 
-            await _unitOfWork.StudentAttendances.AddAsync(record);
-            await _unitOfWork.SaveChangesAsync();
+                var lessons = await _unitOfWork.Lessons.FindAsync(l =>
+                    l.ClassId == matchedStudent.ClassId &&
+                    l.DayOfWeek == nowDay &&
+                    l.StartTime <= nowTime &&
+                    l.EndTime >= nowTime &&
+                    (l.StartDate == null || l.StartDate <= now) &&
+                    (l.EndDate == null || l.EndDate >= now));
+
+                var activeLesson = lessons.FirstOrDefault();
+
+                // Guard: check if already marked present for this lesson today
+                var existing = await _unitOfWork.StudentAttendances.FindAsync(a =>
+                    a.StudentId == matchedStudent.Id &&
+                    a.LessonId == (activeLesson != null ? activeLesson.Id : null) &&
+                    a.CreatedAt.Date == now.Date);
+
+                if (!existing.Any())
+                {
+                    var record = new StudentAttendance
+                    {
+                        StudentId = matchedStudent.Id,
+                        Status = AttendanceStatus.Present,
+                        ByIA = true,
+                        LessonId = activeLesson?.Id,
+                        Note = "Detected via AI face snapshot upload scan.",
+                        CreatedBy = loggedBy,
+                        ModifiedBy = loggedBy,
+                        RecognitionConfidence = match.Confidence
+                    };
+
+                    await _unitOfWork.StudentAttendances.AddAsync(record);
+                    recorded++;
+                }
+
+                model.Matches.Add(new MatchedCandidateViewModel
+                {
+                    Name = matchedStudent.Fullname,
+                    Confidence = Math.Round(match.Confidence * 100.0, 1),
+                    BoundingBox = match.BoundingBox,
+                    Role = "Student"
+                });
+            }
+
+            if (recorded > 0)
+            {
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            if (!model.Matches.Any())
+            {
+                model.IsProcessed = true;
+                model.IsSuccess = false;
+                model.UploadedImageUrl = imageUrl;
+                model.Message = "No registered students identified in this image.";
+                ViewData["Title"] = "AI Student Check-in Scan";
+                return View(model);
+            }
+
+            // Set backward compatible fields to the best match
+            var bestMatch = model.Matches.OrderByDescending(m => m.Confidence).First();
+            model.MatchedName = bestMatch.Name;
+            model.Confidence = bestMatch.Confidence;
+            model.BoundingBox = bestMatch.BoundingBox;
 
             model.IsProcessed = true;
             model.IsSuccess = true;
-            model.MatchedName = matchedStudent.Fullname;
-            model.Confidence = Math.Round(94.2 + random.NextDouble() * 5.3, 1);
             model.UploadedImageUrl = imageUrl;
-            model.Message = $"Face recognized successfully: {matchedStudent.Fullname}. Attendance has been marked Present.";
+            model.Message = $"Recognized {model.Matches.Count} face(s) successfully. Attendance marked for {recorded} student(s).";
 
             ViewData["Title"] = "AI Student Check-in Scan";
             return View(model);

@@ -3,12 +3,34 @@
     ViewData["Title"] = "Register Student";
 }
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
+<!-- ════════════════════════════════════════════════════
+     STEP INDICATOR
+════════════════════════════════════════════════════ -->
+<div class="row justify-content-center mb-3">
+    <div class="col-lg-9">
+        <div class="enroll-step-bar">
+            <div class="enroll-step active" id="stepBar1">
+                <div class="enroll-step-icon">1</div>
+                <div class="enroll-step-label">Student Info</div>
+            </div>
+            <div class="enroll-step" id="stepBar2">
+                <div class="enroll-step-icon"><i class="bi bi-shield-lock" style="font-size:.75rem;"></i></div>
+                <div class="enroll-step-label">Face Enrollment</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     STEP 1 — STUDENT INFO
+════════════════════════════════════════════════════ -->
+<div class="row justify-content-center" id="step1Panel">
+    <div class="col-lg-9">
         <div class="custom-card">
-            <h5 class="card-title mb-4"><i class="bi bi-plus-circle me-1"></i> Register New Student</h5>
-            
-            <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <h5 class="card-title mb-1"><i class="bi bi-person-plus me-1"></i> Register New Student</h5>
+            <p class="text-muted mb-4" style="font-size:.82rem;">Fill in the student's details, then proceed to face enrollment.</p>
+
+            <form asp-action="Create" method="post" enctype="multipart/form-data" id="studentCreateForm">
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                 <div class="row g-3">
@@ -65,15 +87,117 @@
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between mt-4">
-                    <a asp-action="Index" class="btn btn-outline-secondary px-4"><i class="bi bi-arrow-left me-1"></i> Cancel</a>
-                    <button type="submit" class="btn btn-primary-custom px-4"><i class="bi bi-check-lg me-1"></i> Register Student</button>
+                <!-- Action row -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-arrow-left me-1"></i> Cancel
+                    </a>
+                    <div class="d-flex gap-2">
+                        <!-- Save only (skip enrollment) -->
+                        <button type="submit" name="skipEnroll" value="true"
+                                class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-check-lg me-1"></i> Save Only
+                        </button>
+                        <!-- Save + proceed to face enrollment -->
+                        <button type="button" class="btn btn-primary-custom px-4" id="proceedToEnrollBtn">
+                            <i class="bi bi-shield-lock me-1"></i> Save &amp; Enroll Face
+                            <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- ════════════════════════════════════════════════════
+     STEP 2 — FACE ENROLLMENT (hidden until student saved)
+════════════════════════════════════════════════════ -->
+<div class="row justify-content-center d-none" id="step2Panel">
+    <div class="col-lg-9">
+        <div class="custom-card">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#a855f7);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="bi bi-shield-lock-fill" style="color:#fff;font-size:1.1rem;"></i>
+                </div>
+                <div>
+                    <h5 class="card-title mb-0">Step 2 — Face Biometric Enrollment</h5>
+                    <p class="text-muted mb-0" style="font-size:.8rem;">Student saved ✓ &nbsp;·&nbsp; Now enroll their face for AI attendance recognition</p>
+                </div>
+            </div>
+
+            @{
+                ViewData["EnrollMode"] = "create";
+                ViewData["EnrollUserId"] = "";
+                ViewData["EnrollUserName"] = "the new student";
+            }
+            <partial name="_FaceEnrollmentPanel" />
+
+            <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-skip-forward me-1"></i> Skip &amp; Finish
+                </a>
+                <a asp-action="Index" class="btn btn-primary-custom px-4" id="doneBtn">
+                    <i class="bi bi-check-all me-1"></i> Done — Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+    document.getElementById('proceedToEnrollBtn').addEventListener('click', async function () {
+        const form = document.getElementById('studentCreateForm');
+
+        // Use native HTML5 validation — avoids $.parseJSON compat issue with old jquery.validate.unobtrusive
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving…';
+
+        // Submit via fetch to get the new student ID back
+        const fd = new FormData(form);
+        fd.append('returnJson', 'true');   // controller should detect this and return JSON
+        try {
+            const resp = await fetch(form.action, { method: 'POST', body: fd });
+            // If server returns JSON with userId, go to step 2
+            const ct = resp.headers.get('Content-Type') || '';
+            if (ct.includes('application/json')) {
+                const data = await resp.json();
+                if (data.success && data.userId) {
+                    // Inject userId into enrollment panel
+                    document.getElementById('enrollTargetUserId').value = data.userId;
+                    // Switch steps
+                    document.getElementById('step1Panel').classList.add('d-none');
+                    document.getElementById('step2Panel').classList.remove('d-none');
+                    document.getElementById('stepBar1').classList.remove('active');
+                    document.getElementById('stepBar1').classList.add('done');
+                    document.getElementById('stepBar2').classList.add('active');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+                // Server validation errors — show them
+                if (data.errors) {
+                    const summary = form.querySelector('[data-valmsg-summary]');
+                    if (summary) {
+                        summary.innerHTML = '<ul>' + data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                    }
+                }
+            } else {
+                // Fallback: normal redirect (server didn't return JSON)
+                window.location = resp.url;
+            }
+        } catch (e) {
+            alert('Network error — please try again.');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-shield-lock me-1"></i> Save &amp; Enroll Face <i class="bi bi-arrow-right ms-1"></i>';
+    });
+    </script>
 }

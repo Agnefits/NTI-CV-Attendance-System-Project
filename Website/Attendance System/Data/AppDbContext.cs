@@ -179,6 +179,19 @@ namespace Attendance_System.Data
                 .HasForeignKey(fe => fe.BaseUserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // EmbeddingJson stores a JSON float[] — needs NVARCHAR(MAX)
+            modelBuilder.Entity<FaceEmbedding>()
+                .Property(fe => fe.EmbeddingJson)
+                .HasColumnType("nvarchar(max)");
+
+            modelBuilder.Entity<FaceEmbedding>()
+                .Property(fe => fe.CaptureAngle)
+                .HasMaxLength(50);
+
+            modelBuilder.Entity<FaceEmbedding>()
+                .Property(fe => fe.Label)
+                .HasMaxLength(200);
+
             // Configure Log relationships
             modelBuilder.Entity<Log>()
                 .HasOne(l => l.User)

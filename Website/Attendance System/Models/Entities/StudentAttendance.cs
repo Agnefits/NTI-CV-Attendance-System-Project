@@ -23,7 +23,10 @@ namespace Attendance_System.Models.Entities
 
         public Guid? LessonId { get; set; }
         public virtual Lesson? Lesson { get; set; }
-        
+
+        /// <summary>AI-reported confidence score for the face match (0.0 – 1.0).</summary>
+        public float? RecognitionConfidence { get; set; }
+
         public string? Note { get; set; }
     }
 }

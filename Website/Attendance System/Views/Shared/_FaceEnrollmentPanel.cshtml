@@ -1,0 +1,552 @@
+@* 
+    _FaceEnrollmentPanel.cshtml
+    Shared Face Enrollment UI — included in Student & Employee Create/Edit pages.
+    
+    Parameters (passed via ViewData):
+      ViewData["EnrollUserId"]   = Guid? (null on Create — enroll after save)
+      ViewData["EnrollMode"]     = "create" | "edit"
+      ViewData["EnrollUserName"] = string (display name)
+*@
+@{
+    var userId     = ViewData["EnrollUserId"]   as string ?? "";
+    var mode       = ViewData["EnrollMode"]     as string ?? "create";
+    var userName   = ViewData["EnrollUserName"] as string ?? "this person";
+    var isEdit     = mode == "edit";
+}
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FACE ENROLLMENT PANEL STYLES (scoped)                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<style>
+  /* Step indicator */
+  .enroll-step-bar { display:flex; align-items:center; gap:0; margin-bottom:2rem; }
+  .enroll-step { display:flex; flex-direction:column; align-items:center; flex:1; position:relative; }
+  .enroll-step:not(:last-child)::after {
+    content:''; position:absolute; top:18px; left:calc(50% + 18px);
+    width:calc(100% - 36px); height:2px; background:var(--border-color, #dee2e6); z-index:0;
+  }
+  .enroll-step.done::after, .enroll-step.active::after { background: linear-gradient(90deg,#6c63ff,#a855f7); }
+  .enroll-step-icon {
+    width:36px; height:36px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:.85rem; font-weight:700; z-index:1; transition:.3s;
+    background:#f1f3f5; color:#868e96; border:2px solid #dee2e6;
+  }
+  .enroll-step.active .enroll-step-icon { background:linear-gradient(135deg,#6c63ff,#a855f7); color:#fff; border-color:transparent; box-shadow:0 0 0 4px rgba(108,99,255,.18); }
+  .enroll-step.done   .enroll-step-icon { background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; border-color:transparent; }
+  .enroll-step-label  { font-size:.72rem; font-weight:600; margin-top:.35rem; color:#6c757d; text-align:center; }
+  .enroll-step.active .enroll-step-label { color:#6c63ff; }
+  .enroll-step.done   .enroll-step-label { color:#22c55e; }
+
+  /* Tip cards */
+  .angle-tip-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+  .angle-tip-card {
+    background:linear-gradient(145deg,rgba(108,99,255,.06),rgba(168,85,247,.04));
+    border:1.5px solid rgba(108,99,255,.18); border-radius:14px;
+    padding:1rem .75rem; text-align:center; transition:.25s;
+    cursor:pointer; position:relative; overflow:hidden;
+  }
+  .angle-tip-card:hover { border-color:#6c63ff; transform:translateY(-2px); box-shadow:0 6px 20px rgba(108,99,255,.12); }
+  .angle-tip-card.selected { border-color:#6c63ff; background:rgba(108,99,255,.1); }
+  .angle-tip-card.enrolled { border-color:#22c55e; background:rgba(34,197,94,.07); }
+  .angle-tip-card .angle-figure {
+    width:64px; height:64px; margin:0 auto .6rem; border-radius:50%;
+    background:linear-gradient(135deg,#6c63ff22,#a855f722);
+    display:flex; align-items:center; justify-content:center; font-size:2rem;
+    border:2px dashed rgba(108,99,255,.35); position:relative; overflow:hidden;
+  }
+  .angle-tip-card.enrolled .angle-figure { border-color:#22c55e; background:rgba(34,197,94,.1); }
+  .angle-face-svg { width:38px; height:38px; }
+  .angle-label { font-size:.78rem; font-weight:700; color:#495057; margin-bottom:.2rem; }
+  .angle-desc  { font-size:.7rem;  color:#868e96; line-height:1.3; }
+  .angle-badge { position:absolute; top:6px; right:6px; width:20px; height:20px; border-radius:50%;
+                 background:#22c55e; color:#fff; font-size:.62rem; display:none; align-items:center; justify-content:center; }
+  .angle-tip-card.enrolled .angle-badge { display:flex; }
+
+  /* Camera preview */
+  .cam-wrap {
+    position:relative; width:100%; max-width:380px; margin:0 auto;
+    border-radius:16px; overflow:hidden; background:#0d0d0d;
+    box-shadow:0 8px 30px rgba(0,0,0,.2);
+  }
+  #enrollVideo { width:100%; display:block; }
+  #enrollCanvas { display:none; }
+  .cam-overlay {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .face-guide-box {
+    width:52%; aspect-ratio:3/4; border:3px solid rgba(108,99,255,.7);
+    border-radius:50%; box-shadow:0 0 0 4000px rgba(0,0,0,.35);
+    animation:pulse-guide 2s ease-in-out infinite;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  @@keyframes pulse-guide { 0%,100%{ box-shadow:0 0 0 4000px rgba(0,0,0,.35),0 0 0 0 rgba(108,99,255,.4); } 50%{ box-shadow:0 0 0 4000px rgba(0,0,0,.4),0 0 0 12px rgba(108,99,255,.12); } }
+  .cam-hint { position:absolute; bottom:10px; left:0; right:0; text-align:center; }
+  .cam-hint span { background:rgba(0,0,0,.6); color:#fff; font-size:.72rem; padding:3px 12px; border-radius:20px; backdrop-filter:blur(4px); }
+  .cam-no-device { padding:3rem 1rem; text-align:center; color:#868e96; }
+
+  /* Upload slots */
+  .upload-slot {
+    border:2px dashed rgba(108,99,255,.3); border-radius:14px; padding:1rem;
+    text-align:center; cursor:pointer; transition:.25s; position:relative; overflow:hidden;
+    background:rgba(108,99,255,.03);
+  }
+  .upload-slot:hover { border-color:#6c63ff; background:rgba(108,99,255,.07); }
+  .upload-slot.has-image { border-style:solid; border-color:#22c55e; background:rgba(34,197,94,.04); }
+  .upload-slot img.preview { width:100%; height:100px; object-fit:cover; border-radius:8px; display:none; }
+  .upload-slot.has-image img.preview { display:block; }
+  .upload-slot.has-image .slot-placeholder { display:none; }
+  .slot-placeholder i { font-size:1.8rem; color:rgba(108,99,255,.4); }
+  .slot-placeholder small { display:block; font-size:.7rem; color:#868e96; margin-top:.3rem; }
+  .upload-slot input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; z-index:2; }
+
+  /* Status pills */
+  .enroll-status-row { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.75rem; }
+  .enroll-pill { font-size:.72rem; padding:3px 10px; border-radius:20px; font-weight:600; display:flex; align-items:center; gap:.35rem; }
+  .enroll-pill.pending  { background:rgba(108,99,255,.1); color:#6c63ff; }
+  .enroll-pill.success  { background:rgba(34,197,94,.12); color:#16a34a; }
+  .enroll-pill.error    { background:rgba(239,68,68,.1);  color:#dc2626; }
+  .enroll-pill.loading  { background:rgba(251,191,36,.1); color:#d97706; }
+
+  /* Enroll button */
+  .btn-enroll {
+    background:linear-gradient(135deg,#6c63ff,#a855f7); color:#fff; border:none;
+    padding:.55rem 1.4rem; border-radius:10px; font-weight:600; font-size:.85rem;
+    transition:.25s; display:inline-flex; align-items:center; gap:.45rem;
+    box-shadow:0 4px 14px rgba(108,99,255,.25);
+  }
+  .btn-enroll:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(108,99,255,.35); color:#fff; }
+  .btn-enroll:disabled { opacity:.55; cursor:not-allowed; }
+
+  /* Section headers */
+  .enroll-section-head {
+    display:flex; align-items:center; gap:.6rem; margin-bottom:.9rem;
+    padding-bottom:.55rem; border-bottom:1px solid rgba(108,99,255,.12);
+  }
+  .enroll-section-head i { color:#6c63ff; font-size:1.05rem; }
+  .enroll-section-head span { font-weight:700; font-size:.9rem; color:#343a40; }
+
+  /* Or divider */
+  .or-divider { display:flex; align-items:center; gap:.8rem; margin:1.2rem 0; color:#868e96; font-size:.8rem; font-weight:600; }
+  .or-divider::before,.or-divider::after { content:''; flex:1; height:1px; background:rgba(108,99,255,.15); }
+
+  /* Success overlay for card */
+  .enroll-success-banner {
+    display:none; background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(16,185,129,.08));
+    border:1.5px solid rgba(34,197,94,.3); border-radius:12px; padding:1rem 1.25rem;
+    margin-top:1rem; align-items:center; gap:.75rem;
+  }
+  .enroll-success-banner.show { display:flex; }
+
+  @@media(max-width:576px){
+    .angle-tip-grid { grid-template-columns:1fr; }
+    .cam-wrap { max-width:100%; }
+  }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- STEP 2 PANEL: FACE ENROLLMENT                                   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="enrollStep" style="margin-top: @(isEdit ? "1.5rem" : "0");">
+    <div class="enroll-section-head">
+        <i class="bi bi-shield-lock-fill"></i>
+        <span>Face Biometric Enrollment</span>
+        <span class="badge ms-auto" style="background:rgba(108,99,255,.12);color:#6c63ff;font-size:.68rem;">AI Recognition</span>
+    </div>
+
+    <!-- Angle tips -->
+    <p style="font-size:.78rem;color:#6c757d;margin-bottom:.9rem;">
+        Provide <strong>3 photos</strong> from different angles for the best recognition accuracy.
+        Match each photo to the angle shown below.
+    </p>
+    <div class="angle-tip-grid" id="angleTipGrid">
+        <!-- Front -->
+        <div class="angle-tip-card selected" data-slot="0" onclick="selectSlot(0)">
+            <div class="angle-badge"><i class="bi bi-check-lg" style="font-size:.55rem;"></i></div>
+            <div class="angle-figure">
+                <svg class="angle-face-svg" viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="30" cy="32" rx="18" ry="22" fill="#6c63ff" opacity=".18"/>
+                    <ellipse cx="30" cy="32" rx="18" ry="22" stroke="#6c63ff" stroke-width="2.5"/>
+                    <circle cx="22" cy="29" r="3" fill="#6c63ff" opacity=".7"/>
+                    <circle cx="38" cy="29" r="3" fill="#6c63ff" opacity=".7"/>
+                    <path d="M23 40 Q30 46 37 40" stroke="#6c63ff" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    <line x1="30" y1="54" x2="30" y2="72" stroke="#6c63ff" stroke-width="2.5" opacity=".35"/>
+                    <ellipse cx="30" cy="72" rx="14" ry="5" fill="#6c63ff" opacity=".12"/>
+                </svg>
+            </div>
+            <div class="angle-label">📸 Shot 1 — Front</div>
+            <div class="angle-desc">Face the camera directly, chin level, neutral expression</div>
+        </div>
+        <!-- Left -->
+        <div class="angle-tip-card" data-slot="1" onclick="selectSlot(1)">
+            <div class="angle-badge"><i class="bi bi-check-lg" style="font-size:.55rem;"></i></div>
+            <div class="angle-figure">
+                <svg class="angle-face-svg" viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="33" cy="32" rx="15" ry="22" fill="#a855f7" opacity=".15"/>
+                    <ellipse cx="33" cy="32" rx="15" ry="22" stroke="#a855f7" stroke-width="2.5"/>
+                    <circle cx="36" cy="29" r="3" fill="#a855f7" opacity=".7"/>
+                    <path d="M30 40 Q36 46 40 40" stroke="#a855f7" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    <line x1="33" y1="54" x2="30" y2="72" stroke="#a855f7" stroke-width="2.5" opacity=".35"/>
+                    <ellipse cx="30" cy="72" rx="14" ry="5" fill="#a855f7" opacity=".1"/>
+                    <path d="M18 32 Q22 28 20 20" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="3 2" opacity=".5"/>
+                    <text x="4" y="36" font-size="7" fill="#a855f7" opacity=".7">←</text>
+                </svg>
+            </div>
+            <div class="angle-label">📸 Shot 2 — Slight Left</div>
+            <div class="angle-desc">Turn head ~30° to the left, keep eyes on camera</div>
+        </div>
+        <!-- Right -->
+        <div class="angle-tip-card" data-slot="2" onclick="selectSlot(2)">
+            <div class="angle-badge"><i class="bi bi-check-lg" style="font-size:.55rem;"></i></div>
+            <div class="angle-figure">
+                <svg class="angle-face-svg" viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="27" cy="32" rx="15" ry="22" fill="#0ea5e9" opacity=".15"/>
+                    <ellipse cx="27" cy="32" rx="15" ry="22" stroke="#0ea5e9" stroke-width="2.5"/>
+                    <circle cx="24" cy="29" r="3" fill="#0ea5e9" opacity=".7"/>
+                    <path d="M20 40 Q24 46 30 40" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    <line x1="27" y1="54" x2="30" y2="72" stroke="#0ea5e9" stroke-width="2.5" opacity=".35"/>
+                    <ellipse cx="30" cy="72" rx="14" ry="5" fill="#0ea5e9" opacity=".1"/>
+                    <path d="M42 32 Q38 28 40 20" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="3 2" opacity=".5"/>
+                    <text x="48" y="36" font-size="7" fill="#0ea5e9" opacity=".7">→</text>
+                </svg>
+            </div>
+            <div class="angle-label">📸 Shot 3 — Slight Right</div>
+            <div class="angle-desc">Turn head ~30° to the right, keep eyes on camera</div>
+        </div>
+    </div>
+
+    <!-- Current selected slot indicator -->
+    <div id="slotIndicator" style="font-size:.78rem;color:#6c63ff;font-weight:600;margin-bottom:1rem;">
+        <i class="bi bi-arrow-up-circle me-1"></i>
+        Currently capturing: <span id="slotName">Front view</span>
+    </div>
+
+    <!-- WEBCAM Section -->
+    <div class="enroll-section-head" style="margin-top:.5rem;">
+        <i class="bi bi-camera-video-fill"></i>
+        <span>Live Webcam Capture</span>
+        <span class="badge ms-2" style="background:rgba(34,197,94,.12);color:#16a34a;font-size:.66rem;" id="camStatusBadge">Checking…</span>
+    </div>
+
+    <div id="camAvailWrap">
+        <div class="cam-wrap mb-3">
+            <video id="enrollVideo" autoplay muted playsinline></video>
+            <canvas id="enrollCanvas"></canvas>
+            <div class="cam-overlay">
+                <div class="face-guide-box">
+                    <div class="cam-hint"><span id="camGuideLabel">Align face inside the oval</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center">
+            <button type="button" class="btn-enroll" id="captureBtn" disabled>
+                <i class="bi bi-camera"></i> Capture Current Angle
+            </button>
+        </div>
+    </div>
+    <div id="camUnavailMsg" class="cam-no-device d-none">
+        <i class="bi bi-camera-video-off" style="font-size:2.5rem;display:block;margin-bottom:.5rem;color:#dee2e6;"></i>
+        No webcam detected on this device.
+    </div>
+
+    <!-- OR DIVIDER -->
+    <div class="or-divider">or upload photos instead</div>
+
+    <!-- UPLOAD Section -->
+    <div class="enroll-section-head">
+        <i class="bi bi-upload"></i>
+        <span>Upload Photos</span>
+    </div>
+    <div class="angle-tip-grid">
+        <!-- Slot 0: Front -->
+        <div class="upload-slot" id="uploadSlot0" onclick="document.getElementById('fileInput0').click()">
+            <input type="file" id="fileInput0" accept="image/*" onchange="onFileSelected(0,this)">
+            <img class="preview" id="uploadPreview0" src="" alt="">
+            <div class="slot-placeholder">
+                <i class="bi bi-person-bounding-box"></i>
+                <small>Front View</small>
+                <small style="font-size:.65rem;color:#adb5bd;margin-top:.15rem;">Tap to browse</small>
+            </div>
+        </div>
+        <!-- Slot 1: Left -->
+        <div class="upload-slot" id="uploadSlot1" onclick="document.getElementById('fileInput1').click()">
+            <input type="file" id="fileInput1" accept="image/*" onchange="onFileSelected(1,this)">
+            <img class="preview" id="uploadPreview1" src="" alt="">
+            <div class="slot-placeholder">
+                <i class="bi bi-person-bounding-box" style="color:rgba(168,85,247,.5);"></i>
+                <small>Slight Left</small>
+                <small style="font-size:.65rem;color:#adb5bd;margin-top:.15rem;">Tap to browse</small>
+            </div>
+        </div>
+        <!-- Slot 2: Right -->
+        <div class="upload-slot" id="uploadSlot2" onclick="document.getElementById('fileInput2').click()">
+            <input type="file" id="fileInput2" accept="image/*" onchange="onFileSelected(2,this)">
+            <img class="preview" id="uploadPreview2" src="" alt="">
+            <div class="slot-placeholder">
+                <i class="bi bi-person-bounding-box" style="color:rgba(14,165,233,.5);"></i>
+                <small>Slight Right</small>
+                <small style="font-size:.65rem;color:#adb5bd;margin-top:.15rem;">Tap to browse</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden userId for JS -->
+    <input type="hidden" id="enrollTargetUserId" value="@userId">
+
+    <!-- Enroll button + status -->
+    <div class="d-flex align-items-center gap-3 mt-3 flex-wrap">
+        <button type="button" class="btn-enroll" id="enrollBtn" disabled onclick="submitEnrollment()">
+            <i class="bi bi-shield-check"></i>
+            <span id="enrollBtnText">Enroll Face (0/3 ready)</span>
+        </button>
+        <div id="enrollStatusRow" class="enroll-status-row"></div>
+    </div>
+
+    <!-- Success banner -->
+    <div class="enroll-success-banner" id="enrollSuccessBanner">
+        <i class="bi bi-check-circle-fill" style="color:#22c55e;font-size:1.4rem;flex-shrink:0;"></i>
+        <div>
+            <div style="font-weight:700;color:#166534;">Biometric enrollment complete!</div>
+            <div style="font-size:.78rem;color:#166534;" id="enrollSuccessDetail">3 face embeddings stored successfully.</div>
+        </div>
+    </div>
+
+    @if (isEdit)
+    {
+        <!-- Clear old embeddings (edit mode only) -->
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px dashed rgba(239,68,68,.2);">
+            <div style="font-size:.78rem;color:#6c757d;margin-bottom:.5rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                Enrolling new photos will <strong>add</strong> to existing embeddings.
+                Use the button below to clear all previous face data first.
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="clearEmbeddingsBtn"
+                    onclick="clearAllEmbeddings()" style="font-size:.76rem;">
+                <i class="bi bi-trash3 me-1"></i> Clear All Previous Face Data
+            </button>
+            <span id="clearStatus" class="ms-2" style="font-size:.76rem;"></span>
+        </div>
+    }
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT                                                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  /* ── State ── */
+  const SLOTS       = ['front','slight-left','slight-right'];
+  const SLOT_LABELS = ['Front view','Slight Left','Slight Right'];
+  const SLOT_ANGLES = ['front','slight-left','slight-right'];
+  let capturedImages = [null, null, null];   // base64 strings
+  let currentSlot    = 0;
+  let stream         = null;
+
+  /* ── Webcam init ── */
+  const video      = document.getElementById('enrollVideo');
+  const canvas     = document.getElementById('enrollCanvas');
+  const camAvail   = document.getElementById('camAvailWrap');
+  const camUnavail = document.getElementById('camUnavailMsg');
+  const camBadge   = document.getElementById('camStatusBadge');
+  const captureBtn = document.getElementById('captureBtn');
+
+  async function initCam() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showNoCam(); return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:640, height:480 }, audio:false });
+      video.srcObject = stream;
+      camAvail.classList.remove('d-none');
+      camUnavail.classList.add('d-none');
+      camBadge.textContent = 'Online';
+      camBadge.style.background = 'rgba(34,197,94,.12)';
+      camBadge.style.color = '#16a34a';
+      captureBtn.disabled = false;
+    } catch(e) {
+      showNoCam();
+    }
+  }
+
+  function showNoCam() {
+    camAvail.classList.add('d-none');
+    camUnavail.classList.remove('d-none');
+    camBadge.textContent = 'Unavailable';
+    camBadge.style.background = 'rgba(239,68,68,.1)';
+    camBadge.style.color = '#dc2626';
+  }
+
+  /* ── Slot selection ── */
+  window.selectSlot = function(idx) {
+    currentSlot = idx;
+    document.querySelectorAll('.angle-tip-card').forEach((c,i) =>
+      c.classList.toggle('selected', i === idx));
+    document.getElementById('slotName').textContent = SLOT_LABELS[idx];
+    document.getElementById('camGuideLabel').textContent =
+      ['Align face – looking straight','Align face – turn left ~30°','Align face – turn right ~30°'][idx];
+  };
+
+  /* ── Webcam capture ── */
+  captureBtn && captureBtn.addEventListener('click', function() {
+    if (!video.srcObject) return;
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const b64 = canvas.toDataURL('image/jpeg', .9).split(',')[1];
+    storeCapture(currentSlot, b64, null);
+    // Flash capture feedback
+    captureBtn.innerHTML = '<i class="bi bi-check-lg"></i> Captured!';
+    captureBtn.style.background = 'linear-gradient(135deg,#22c55e,#16a34a)';
+    setTimeout(() => {
+      captureBtn.innerHTML = '<i class="bi bi-camera"></i> Capture Current Angle';
+      captureBtn.style.background = '';
+    }, 900);
+    // Auto-advance to next empty slot
+    const nextEmpty = capturedImages.findIndex((v,i) => v === null && i !== currentSlot);
+    if (nextEmpty !== -1) setTimeout(() => selectSlot(nextEmpty), 600);
+  });
+
+  /* ── File upload handler ── */
+  window.onFileSelected = function(slotIdx, input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const b64 = e.target.result.split(',')[1];
+      const dataUrl = e.target.result;
+      storeCapture(slotIdx, b64, dataUrl);
+      // Show preview in upload slot
+      const preview = document.getElementById('uploadPreview' + slotIdx);
+      const slot    = document.getElementById('uploadSlot'   + slotIdx);
+      preview.src = dataUrl;
+      slot.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /* ── Store a captured/uploaded image ── */
+  function storeCapture(idx, b64, dataUrl) {
+    capturedImages[idx] = b64;
+    // Mark tip card as enrolled
+    const cards = document.querySelectorAll('.angle-tip-card');
+    if (cards[idx]) cards[idx].classList.add('enrolled');
+    // Update button
+    updateEnrollBtn();
+    // Auto-select next empty for webcam
+    selectSlot(idx);
+  }
+
+  /* ── Button state ── */
+  function updateEnrollBtn() {
+    const ready = capturedImages.filter(Boolean).length;
+    const btn   = document.getElementById('enrollBtn');
+    const txt   = document.getElementById('enrollBtnText');
+    txt.textContent = `Enroll Face (${ready}/3 ready)`;
+    btn.disabled    = (ready === 0);
+  }
+
+  /* ── Enrollment submission ── */
+  window.submitEnrollment = async function() {
+    const userId = document.getElementById('enrollTargetUserId').value;
+    if (!userId) {
+      addStatus('error', 'Save the record first, then enroll face.');
+      return;
+    }
+    const toEnroll = capturedImages.map((b64, i) => b64 ? { image: b64, slot: i } : null).filter(Boolean);
+    if (!toEnroll.length) return;
+
+    const btn = document.getElementById('enrollBtn');
+    btn.disabled = true;
+    clearStatuses();
+    addStatus('loading', `Sending ${toEnroll.length} image(s) to AI service…`);
+
+    let ok = 0, fail = 0;
+    for (const item of toEnroll) {
+      try {
+        const resp = await fetch('/FaceEnrollment/Enroll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId:       userId,
+            imageBase64:  item.image,
+            captureAngle: SLOT_ANGLES[item.slot],
+            label:        `Enrollment shot ${item.slot + 1} (${SLOT_LABELS[item.slot]})`
+          })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          ok++;
+          addStatus('success', `Shot ${item.slot+1} ✓ Quality: ${(data.qualityScore*100).toFixed(0)}%`);
+        } else {
+          fail++;
+          addStatus('error', `Shot ${item.slot+1} — ${data.message}`);
+        }
+      } catch(e) {
+        fail++;
+        addStatus('error', `Shot ${item.slot+1} — Network error`);
+      }
+    }
+
+    btn.disabled = false;
+    clearStatuses();
+    if (ok > 0) {
+      document.getElementById('enrollSuccessBanner').classList.add('show');
+      document.getElementById('enrollSuccessDetail').textContent =
+        `${ok} embedding(s) stored successfully.` + (fail > 0 ? ` ${fail} failed.` : '');
+    }
+    if (fail > 0 && ok === 0) {
+      addStatus('error', `All ${fail} images failed. Check AI service connection.`);
+    }
+  };
+
+  /* ── Clear embeddings (edit mode) ── */
+  window.clearAllEmbeddings = async function() {
+    const userId = document.getElementById('enrollTargetUserId').value;
+    if (!userId || !confirm('Are you sure you want to delete ALL face data for this person? They will need to be re-enrolled.')) return;
+
+    const btn = document.getElementById('clearEmbeddingsBtn');
+    const statusEl = document.getElementById('clearStatus');
+    btn.disabled = true;
+    statusEl.innerHTML = '<span style="color:#d97706">Clearing…</span>';
+
+    // We delete all embeddings one by one via preview + delete API
+    try {
+      const previewResp = await fetch(`/FaceEnrollment/Preview/${userId}`);
+      const previewData = await previewResp.json();
+      if (previewData.success && previewData.data.length > 0) {
+        for (const emb of previewData.data) {
+          await fetch('/FaceEnrollment/Delete/' + emb.id, { method:'POST' });
+        }
+        statusEl.innerHTML = `<span style="color:#22c55e"><i class="bi bi-check me-1"></i>${previewData.data.length} embedding(s) removed.</span>`;
+        document.getElementById('enrollSuccessBanner').classList.remove('show');
+        capturedImages = [null,null,null];
+        document.querySelectorAll('.angle-tip-card').forEach(c => c.classList.remove('enrolled'));
+        document.querySelectorAll('.upload-slot').forEach(s => s.classList.remove('has-image'));
+        updateEnrollBtn();
+      } else {
+        statusEl.innerHTML = '<span style="color:#6c757d">No embeddings found.</span>';
+      }
+    } catch(e) {
+      statusEl.innerHTML = '<span style="color:#dc2626">Error — could not connect.</span>';
+    }
+    btn.disabled = false;
+  };
+
+  /* ── Status helpers ── */
+  function addStatus(type, msg) {
+    const row = document.getElementById('enrollStatusRow');
+    const pill = document.createElement('div');
+    pill.className = `enroll-pill ${type}`;
+    const icons = { success:'bi-check-circle-fill', error:'bi-x-circle-fill', loading:'bi-hourglass-split', pending:'bi-clock' };
+    pill.innerHTML = `<i class="bi ${icons[type]||''}"></i>${msg}`;
+    row.appendChild(pill);
+  }
+  function clearStatuses() {
+    document.getElementById('enrollStatusRow').innerHTML = '';
+  }
+
+  /* ── Init ── */
+  updateEnrollBtn();
+  initCam();
+})();
+</script>

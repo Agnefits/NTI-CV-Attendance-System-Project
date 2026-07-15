@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -66,6 +67,15 @@ namespace Attendance_System
             builder.Services.AddTransient<IEmailService, EmailService>();
             builder.Services.AddTransient<IFileService, FileService>();
             builder.Services.AddTransient<IAuthService, AuthService>();
+
+            // Register Face AI microservice client
+            // Base URL is configured in appsettings under FaceAISettings:BaseUrl
+            var faceAiBaseUrl = builder.Configuration["FaceAISettings:BaseUrl"] ?? "http://localhost:8000";
+            builder.Services.AddHttpClient<IFaceAIService, FaceAIService>(client =>
+            {
+                client.BaseAddress = new Uri(faceAiBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
 
             var app = builder.Build();
 
