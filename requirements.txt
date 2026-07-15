@@ -1,5 +1,7 @@
 cmake
 dlib-bin
+dlib
+face-recognition
 opencv-python
 numpy
 schedule
