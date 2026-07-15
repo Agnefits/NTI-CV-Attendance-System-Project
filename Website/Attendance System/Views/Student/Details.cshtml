@@ -1,0 +1,122 @@
+@model Attendance_System.ViewModels.Student.StudentDetailsViewModel
+@{
+    ViewData["Title"] = $"{Model.Fullname} Profile";
+}
+
+<div class="row">
+    <!-- Left Column: Student Details Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="custom-card text-center">
+            <div class="pb-3 border-bottom">
+                <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/img/avatar-default.png" : Model.ImageUrl)" 
+                     alt="Avatar" class="rounded-circle img-thumbnail mb-3" 
+                     style="width: 120px; height: 120px; object-fit: cover;" 
+                     onerror="this.src='/img/avatar-default.png'" />
+                <h4 class="fw-bold mb-1">@Model.Fullname</h4>
+                <p class="text-muted text-sm mb-2"><i class="bi bi-mortarboard-fill me-1"></i> Student</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <span class="badge bg-secondary-subtle text-secondary border">@Model.LevelTitle</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary">@Model.ClassTitle</span>
+                </div>
+            </div>
+
+            <div class="py-3 text-start text-sm border-bottom">
+                <div class="mb-2"><strong>Username:</strong> <code class="text-secondary bg-light p-1 rounded">@Model.Username</code></div>
+                <div class="mb-2"><strong>Email:</strong> @(Model.Email ?? "Not provided")</div>
+                <div class="mb-0"><strong>Phone:</strong> @(Model.PhoneNumber ?? "Not provided")</div>
+            </div>
+
+            <div class="pt-3 text-start">
+                <h6 class="fw-bold text-xs text-muted uppercase mb-2">Face Recognition Module</h6>
+                @if (Model.HasFaceEmbedding)
+                {
+                    <div class="alert alert-success border border-success rounded-3 p-2 mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-fill-check fs-5"></i>
+                        <span class="text-xs fw-semibold">Biometric face data registered.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning border border-warning rounded-3 p-2 mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-fill-exclamation fs-5"></i>
+                        <span class="text-xs fw-semibold">No biometric face data registered.</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Analytics & Attendance Activity -->
+    <div class="col-lg-8 mb-4">
+        <!-- Attendance Metric Card -->
+        <div class="custom-card mb-4">
+            <h5 class="card-title">Attendance Overview</h5>
+            <div class="d-flex align-items-center justify-content-around py-3">
+                <div class="text-center">
+                    <h2 class="fw-extrabold mb-0 @(Model.AttendancePercent >= 75 ? "text-success" : (Model.AttendancePercent >= 50 ? "text-warning" : "text-danger"))">@Model.AttendancePercent%</h2>
+                    <span class="text-xs text-muted uppercase font-bold">Total Ratio</span>
+                </div>
+                <div class="text-center border-start ps-4">
+                    <h2 class="fw-extrabold mb-0">@Model.RecentAttendances.Count(a => a.Status == Attendance_System.Models.Enums.AttendanceStatus.Present)</h2>
+                    <span class="text-xs text-muted uppercase font-bold">Present (Recent)</span>
+                </div>
+                <div class="text-center border-start ps-4">
+                    <h2 class="fw-extrabold mb-0">@Model.RecentAttendances.Count(a => a.Status == Attendance_System.Models.Enums.AttendanceStatus.Absent)</h2>
+                    <span class="text-xs text-muted uppercase font-bold">Absent (Recent)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Logs Table -->
+        <div class="custom-card">
+            <h5 class="card-title">Recent Activity Logs</h5>
+            <div class="table-responsive-custom">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Detection Mode</th>
+                            <th>Capture Source</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentAttendances.Any())
+                        {
+                            foreach (var log in Model.RecentAttendances)
+                            {
+                                <tr>
+                                    <td>@log.CreatedAt.ToString("g")</td>
+                                    <td>
+                                        @if (log.ByIA)
+                                        {
+                                            <span class="text-indigo"><i class="bi bi-cpu me-1"></i> AI Camera</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted"><i class="bi bi-pencil me-1"></i> Manual Entry</span>
+                                        }
+                                    </td>
+                                    <td>@(log.CameraTitle ?? "System Console")</td>
+                                    <td>
+                                        <partial name="_StatusBadge" model="log.Status" />
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No recent attendance records found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between">
+    <a asp-action="Index" class="btn btn-outline-secondary px-4"><i class="bi bi-arrow-left me-1"></i> Back to Roster</a>
+</div>

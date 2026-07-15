@@ -1,0 +1,224 @@
+@model Attendance_System.ViewModels.Lesson.LessonFilterViewModel
+@{
+    ViewData["Title"] = "Lesson Schedules";
+    var isAdmin = User.IsInRole("Admin");
+    var daysOfWeek = Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>().ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="text-muted font-medium mb-0">Assigned Lesson Matrix</h5>
+    <div class="d-flex gap-3">
+        <!-- View Toggle Nav -->
+        <ul class="nav nav-pills bg-white border p-1 rounded-3" id="viewToggle" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active py-1.5 px-3 rounded-2 text-xs font-semibold" id="listView-tab" data-bs-toggle="pill" data-bs-target="#listView" type="button" role="tab"><i class="bi bi-list-task me-1"></i> List</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-1.5 px-3 rounded-2 text-xs font-semibold" id="gridView-tab" data-bs-toggle="pill" data-bs-target="#gridView" type="button" role="tab"><i class="bi bi-grid-3x3-gap me-1"></i> Grid</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-1.5 px-3 rounded-2 text-xs font-semibold" id="calendarView-tab" data-bs-toggle="pill" data-bs-target="#calendarView" type="button" role="tab"><i class="bi bi-calendar3 me-1"></i> Calendar</button>
+            </li>
+        </ul>
+
+        @if (isAdmin)
+        {
+            <a asp-action="Create" class="btn btn-primary-custom"><i class="bi bi-plus-lg me-1"></i> Add Lesson</a>
+        }
+    </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="custom-card mb-4">
+    <form asp-action="Index" method="get" class="row g-3 align-items-end">
+        <div class="col-md-3 form-group">
+            <label class="form-label" for="LevelId">Academic Level</label>
+            <select asp-for="LevelId" asp-items="Model.LevelOptions" class="form-select">
+                <option value="">-- All Levels --</option>
+            </select>
+        </div>
+        <div class="col-md-3 form-group">
+            <label class="form-label" for="ClassId">Class</label>
+            <select asp-for="ClassId" asp-items="Model.ClassOptions" class="form-select">
+                <option value="">-- All Classes --</option>
+            </select>
+        </div>
+        <div class="col-md-3 form-group">
+            <label class="form-label" for="TeacherId">Teacher</label>
+            <select asp-for="TeacherId" asp-items="Model.TeacherOptions" class="form-select">
+                <option value="">-- All Teachers --</option>
+            </select>
+        </div>
+        <div class="col-md-2 form-group">
+            <label class="form-label" for="DayOfWeek">Day of Week</label>
+            <select asp-for="DayOfWeek" asp-items="Model.DayOfWeekOptions" class="form-select">
+                <option value="">-- All Days --</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary-custom w-100"><i class="bi bi-funnel-fill"></i></button>
+        </div>
+    </form>
+</div>
+
+<div class="tab-content" id="lessonViewsContent">
+    <!-- 1. LIST VIEW TAB -->
+    <div class="tab-pane fade show active" id="listView" role="tabpanel" aria-labelledby="listView-tab">
+        <div class="custom-card">
+            <div class="table-responsive-custom">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Time Slot</th>
+                            <th>Class Context</th>
+                            <th>Classroom</th>
+                            <th>Instructor</th>
+                            <th>Dates (Active)</th>
+                            @if (isAdmin)
+                            {
+                                <th class="text-end">Actions</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Results.Any())
+                        {
+                            foreach (var lesson in Model.Results)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-primary text-white font-semibold">@lesson.DayOfWeekName</span></td>
+                                    <td class="fw-bold">@lesson.StartTimeFormatted - @lesson.EndTimeFormatted</td>
+                                    <td>
+                                        <div class="fw-bold text-primary">@lesson.ClassTitle</div>
+                                        <span class="text-xxs text-muted">@lesson.LevelTitle</span>
+                                    </td>
+                                    <td><span class="text-muted"><i class="bi bi-door-open-fill me-1"></i> @lesson.ClassRoomTitle</span></td>
+                                    <td class="fw-semibold">@lesson.TeacherName</td>
+                                    <td class="text-xs text-muted">
+                                        @if (lesson.StartDate.HasValue || lesson.EndDate.HasValue)
+                                        {
+                                            <span>@(lesson.StartDate?.ToString("yyyy-MM-dd") ?? "Start") to @(lesson.EndDate?.ToString("yyyy-MM-dd") ?? "End")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-white-50 bg-secondary px-1.5 py-0.5 rounded text-xxs">Ongoing</span>
+                                        }
+                                    </td>
+                                    @if (isAdmin)
+                                    {
+                                        <td class="text-end">
+                                            <a asp-action="Edit" asp-route-id="@lesson.Id" class="btn btn-sm btn-outline-secondary px-3"><i class="bi bi-pencil-square me-1"></i> Edit</a>
+                                            <form asp-action="Delete" asp-route-id="@lesson.Id" method="post" onsubmit="return confirm('Are you sure?');" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger px-3"><i class="bi bi-trash me-1"></i> Delete</button>
+                                            </form>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="@(isAdmin ? 7 : 6)" class="text-center text-muted py-4">No lessons registered.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. GRID VIEW TAB -->
+    <div class="tab-pane fade" id="gridView" role="tabpanel" aria-labelledby="gridView-tab">
+        <div class="row">
+            @if (Model.Results.Any())
+            {
+                foreach (var lesson in Model.Results)
+                {
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="custom-card h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge bg-primary text-white font-semibold">@lesson.DayOfWeekName</span>
+                                    <span class="text-xs text-muted fw-bold"><i class="bi bi-clock me-1"></i> @lesson.StartTimeFormatted - @lesson.EndTimeFormatted</span>
+                                </div>
+                                <h5 class="fw-bold text-primary mb-1">@lesson.ClassTitle</h5>
+                                <span class="text-xs text-muted font-medium bg-light p-1 rounded d-inline-block mb-3">@lesson.LevelTitle</span>
+                                
+                                <div class="text-sm text-muted mb-3 g-2">
+                                    <div class="mb-1"><i class="bi bi-door-open me-2"></i> Classroom: @lesson.ClassRoomTitle</div>
+                                    <div class="mb-0"><i class="bi bi-person me-2"></i> Instructor: @lesson.TeacherName</div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-2">
+                                <span class="text-xxs text-muted">
+                                    @if (lesson.StartDate.HasValue || lesson.EndDate.HasValue)
+                                    {
+                                        <span>@(lesson.StartDate?.ToString("MM/dd") ?? "-") - @(lesson.EndDate?.ToString("MM/dd") ?? "-")</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Ongoing Schedule</span>
+                                    }
+                                </span>
+                                @if (isAdmin)
+                                {
+                                    <div class="d-flex gap-2">
+                                        <a asp-action="Edit" asp-route-id="@lesson.Id" class="btn btn-sm btn-outline-secondary px-2"><i class="bi bi-pencil-square"></i></a>
+                                        <form asp-action="Delete" asp-route-id="@lesson.Id" method="post" onsubmit="return confirm('Are you sure?');" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger px-2"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center text-muted py-5">
+                    <i class="bi bi-grid-3x3-gap fs-1 mb-2"></i>
+                    <p>No lessons registered.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 3. CALENDAR VIEW TAB -->
+    <div class="tab-pane fade" id="calendarView" role="tabpanel" aria-labelledby="calendarView-tab">
+        <div class="custom-card overflow-auto">
+            <div class="row g-2" style="min-width: 1000px;">
+                @foreach (var day in daysOfWeek)
+                {
+                    var dayLessons = Model.Results.Where(l => l.DayOfWeek == day).OrderBy(l => l.StartTime).ToList();
+                    <div class="col" style="flex: 1; min-width: 140px;">
+                        <div class="text-center bg-light border-bottom py-2.5 rounded-top mb-2">
+                            <h6 class="fw-bold mb-0 text-primary">@day.ToString()</h6>
+                        </div>
+                        <div class="d-flex flex-column gap-2" style="min-height: 400px; background-color: #fbfbfb; border: 1.5px dashed #e2e8f0; border-radius: 8px; padding: 8px;">
+                            @if (dayLessons.Any())
+                            {
+                                foreach (var lesson in dayLessons)
+                                {
+                                    <div class="bg-white border rounded p-2.5 shadow-sm text-xs">
+                                        <div class="fw-bold text-primary mb-1">@lesson.ClassTitle</div>
+                                        <div class="text-xxs text-muted mb-1"><i class="bi bi-clock"></i> @lesson.StartTime.ToString(@"hh\:mm")-@lesson.EndTime.ToString(@"hh\:mm")</div>
+                                        <div class="text-xxs mb-1"><i class="bi bi-door-open"></i> @lesson.ClassRoomTitle</div>
+                                        <div class="text-xxs font-medium text-dark"><i class="bi bi-person"></i> @lesson.TeacherName</div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted text-xxs my-auto py-5">No Lessons</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

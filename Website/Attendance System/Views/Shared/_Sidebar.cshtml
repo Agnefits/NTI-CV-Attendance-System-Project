@@ -1,0 +1,157 @@
+@using Attendance_System.Models.Enums
+@{
+    var username = User.Identity?.Name ?? "Guest";
+    var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Student";
+    var profileImg = User.FindFirst("ImageUrl")?.Value ?? "/img/avatar-default.png";
+}
+
+<div class="sidebar" id="appSidebar">
+    <div class="sidebar-header">
+        <i class="bi bi-clock-history text-indigo" style="font-size: 1.5rem; color: var(--accent);"></i>
+        <h4>ATTENDANCE SYS</h4>
+        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    
+    <ul class="sidebar-menu">
+        <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+            <a asp-controller="Dashboard" asp-action="Index">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+
+        @if (role == Roles.Admin.ToString())
+        {
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Branch" ? "active" : "")">
+                <a asp-controller="Branch" asp-action="Index">
+                    <i class="bi bi-building"></i>
+                    <span>Branches</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Level" ? "active" : "")">
+                <a asp-controller="Level" asp-action="Index">
+                    <i class="bi bi-mortarboard"></i>
+                    <span>Levels</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Class" ? "active" : "")">
+                <a asp-controller="Class" asp-action="Index">
+                    <i class="bi bi-book"></i>
+                    <span>Classes</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "ClassRoom" ? "active" : "")">
+                <a asp-controller="ClassRoom" asp-action="Index">
+                    <i class="bi bi-door-open"></i>
+                    <span>Classrooms</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Employee" ? "active" : "")">
+                <a asp-controller="Employee" asp-action="Index">
+                    <i class="bi bi-people"></i>
+                    <span>Employees</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Student" ? "active" : "")">
+                <a asp-controller="Student" asp-action="Index">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    <span>Students</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Lesson" ? "active" : "")">
+                <a asp-controller="Lesson" asp-action="Index">
+                    <i class="bi bi-journal-bookmark-fill"></i>
+                    <span>Lessons</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Camera" ? "active" : "")">
+                <a asp-controller="Camera" asp-action="Index">
+                    <i class="bi bi-camera-video"></i>
+                    <span>Cameras</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "StudentAttendance" ? "active" : "")">
+                <a asp-controller="StudentAttendance" asp-action="Index">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Student Attendance</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "EmployeeAttendance" ? "active" : "")">
+                <a asp-controller="EmployeeAttendance" asp-action="Index">
+                    <i class="bi bi-person-workspace"></i>
+                    <span>Employee Attendance</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminUser" ? "active" : "")">
+                <a asp-controller="AdminUser" asp-action="Index">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Admins</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Setting" ? "active" : "")">
+                <a asp-controller="Setting" asp-action="Index">
+                    <i class="bi bi-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Log" ? "active" : "")">
+                <a asp-controller="Log" asp-action="Index">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Audit Logs</span>
+                </a>
+            </li>
+        }
+        else if (role == Roles.Teacher.ToString() || role == Roles.Employee.ToString())
+        {
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Student" ? "active" : "")">
+                <a asp-controller="Student" asp-action="Index">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    <span>Students</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "StudentAttendance" ? "active" : "")">
+                <a asp-controller="StudentAttendance" asp-action="Index">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Student Attendance</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Lesson" ? "active" : "")">
+                <a asp-controller="Lesson" asp-action="Index">
+                    <i class="bi bi-journal-bookmark-fill"></i>
+                    <span>My Lessons</span>
+                </a>
+            </li>
+        }
+        else // Student
+        {
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "StudentAttendance" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                <a asp-controller="StudentAttendance" asp-action="Index">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>My Attendance</span>
+                </a>
+            </li>
+        }
+
+        <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Profile" ? "active" : "")">
+            <a asp-controller="Profile" asp-action="Index">
+                <i class="bi bi-person-circle"></i>
+                <span>Profile</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-profile">
+            <img src="@profileImg" onerror="this.src='/img/avatar-default.png'" alt="User Profile Image" />
+            <div class="sidebar-profile-info">
+                <p class="sidebar-profile-name">@username</p>
+                <p class="sidebar-profile-role">@role</p>
+            </div>
+            <a asp-controller="Auth" asp-action="Logout" class="ms-auto text-danger" title="Logout">
+                <i class="bi bi-box-arrow-right" style="font-size: 1.25rem;"></i>
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,26 @@
+@model Attendance_System.Models.Enums.AttendanceStatus
+
+@{
+    var cssClass = Model switch
+    {
+        Attendance_System.Models.Enums.AttendanceStatus.Present => "status-present",
+        Attendance_System.Models.Enums.AttendanceStatus.Absent => "status-absent",
+        Attendance_System.Models.Enums.AttendanceStatus.Late => "status-late",
+        Attendance_System.Models.Enums.AttendanceStatus.Excused => "status-excused",
+        _ => "bg-secondary text-white"
+    };
+    
+    var icon = Model switch
+    {
+        Attendance_System.Models.Enums.AttendanceStatus.Present => "bi-check-circle-fill",
+        Attendance_System.Models.Enums.AttendanceStatus.Absent => "bi-x-circle-fill",
+        Attendance_System.Models.Enums.AttendanceStatus.Late => "bi-clock-fill",
+        Attendance_System.Models.Enums.AttendanceStatus.Excused => "bi-info-circle-fill",
+        _ => "bi-question-circle-fill"
+    };
+}
+
+<span class="status-badge @cssClass">
+    <i class="bi @icon"></i>
+    @Model.ToString()
+</span>

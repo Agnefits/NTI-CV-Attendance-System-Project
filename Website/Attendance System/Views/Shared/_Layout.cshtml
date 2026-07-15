@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Attendance System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <link href="/img/logo.png" rel="icon">
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <!-- Sidebar overlay (mobile/tablet) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <partial name="_Sidebar" />
+
+        <!-- Main Workspace -->
+        <div class="content-wrapper">
+            <!-- Topbar header details -->
+            <partial name="_Topbar" />
+
+            <!-- Core Render Dashboard Body -->
+            <main role="main" class="main-content">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+    <script>
+        // Shim for jQuery.parseJSON which was removed in jQuery 3.x
+        if (typeof jQuery !== 'undefined' && !jQuery.parseJSON) {
+            jQuery.parseJSON = JSON.parse;
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        // Responsive Sidebar Toggle Logic
+        (function () {
+            const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggleBtn = document.getElementById('sidebarToggleBtn');
+            const closeBtn = document.getElementById('sidebarCloseBtn');
+
+            function openSidebar() {
+                sidebar.classList.add('open');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+
+            // Close sidebar when a nav link is clicked on mobile
+            if (sidebar) {
+                sidebar.querySelectorAll('.sidebar-menu a').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        if (window.innerWidth <= 992) closeSidebar();
+                    });
+                });
+            }
+
+            // On resize to desktop — reset state
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 992) {
+                    closeSidebar();
+                }
+            });
+        })();
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

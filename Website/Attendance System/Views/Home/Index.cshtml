@@ -1,0 +1,1113 @@
+@{
+    ViewData["Title"] = "Smart Attendance System — AI-Powered Face Recognition";
+    Layout = "~/Views/Shared/_LandingLayout.cshtml";
+}
+
+@section Styles {
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --primary: #0F172A;
+        --accent: #6366F1;
+        --accent2: #8B5CF6;
+        --accent3: #06B6D4;
+        --success: #10B981;
+        --warning: #F59E0B;
+        --danger: #F43F5E;
+        --text-light: #F8FAFC;
+        --text-muted-light: rgba(248,250,252,0.65);
+        --font: 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+        font-family: var(--font);
+        background: var(--primary);
+        color: var(--text-light);
+        overflow-x: hidden;
+    }
+
+    /* =========== NAVBAR =========== */
+    .lp-nav {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 60px;
+        background: rgba(15,23,42,0.5);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        transition: padding 0.3s ease;
+    }
+    .lp-nav.scrolled {
+        padding: 12px 60px;
+        background: rgba(15,23,42,0.92);
+    }
+    .lp-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+    }
+    .lp-brand-icon {
+        width: 40px; height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 0 20px rgba(99,102,241,0.4);
+    }
+    .lp-brand-name {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: 0.3px;
+    }
+    .lp-brand-name span { color: var(--accent); }
+    .lp-nav-links {
+        display: flex;
+        align-items: center;
+        gap: 36px;
+        list-style: none;
+    }
+    .lp-nav-links a {
+        color: var(--text-muted-light);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .lp-nav-links a:hover { color: #fff; }
+    .lp-nav-cta {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .lp-btn-login {
+        padding: 10px 28px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+    }
+    .lp-btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(99,102,241,0.5);
+        color: #fff;
+    }
+    .lp-nav-hamburger {
+        display: none;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+
+    /* =========== HERO =========== */
+    .lp-hero {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+    }
+    .lp-hero-bg {
+        position: absolute;
+        inset: 0;
+        background-image: url('/img/landing-hero.png');
+        background-size: cover;
+        background-position: center;
+        opacity: 0.35;
+    }
+    .lp-hero-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            135deg,
+            rgba(15,23,42,0.95) 0%,
+            rgba(30,27,75,0.75) 50%,
+            rgba(15,23,42,0.85) 100%
+        );
+    }
+    /* Animated orbs */
+    .hero-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.25;
+        animation: orbFloat 8s ease-in-out infinite alternate;
+    }
+    .hero-orb-1 {
+        width: 600px; height: 600px;
+        background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+        top: -200px; right: -100px;
+        animation-delay: 0s;
+    }
+    .hero-orb-2 {
+        width: 400px; height: 400px;
+        background: radial-gradient(circle, var(--accent3) 0%, transparent 70%);
+        bottom: -100px; left: -100px;
+        animation-delay: -3s;
+    }
+    .hero-orb-3 {
+        width: 300px; height: 300px;
+        background: radial-gradient(circle, var(--accent2) 0%, transparent 70%);
+        top: 40%; left: 40%;
+        animation-delay: -5s;
+    }
+    @@keyframes orbFloat {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(30px, -40px) scale(1.05); }
+    }
+    /* Grid lines overlay */
+    .hero-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+        background-size: 60px 60px;
+    }
+    .lp-hero-content {
+        position: relative;
+        z-index: 10;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 120px 60px 80px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        gap: 60px;
+    }
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: 30px;
+        background: rgba(99,102,241,0.12);
+        border: 1px solid rgba(99,102,241,0.3);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #a5b4fc;
+        margin-bottom: 24px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+    .hero-badge i { color: var(--accent); font-size: 0.9rem; }
+    .hero-title {
+        font-size: clamp(2.4rem, 5vw, 3.8rem);
+        font-weight: 900;
+        line-height: 1.1;
+        color: #fff;
+        margin-bottom: 24px;
+    }
+    .hero-title .hl {
+        background: linear-gradient(135deg, var(--accent), var(--accent3));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .hero-desc {
+        font-size: 1.1rem;
+        color: var(--text-muted-light);
+        line-height: 1.7;
+        margin-bottom: 40px;
+        max-width: 520px;
+    }
+    .hero-buttons {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .hero-btn-primary {
+        padding: 14px 36px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+        color: #fff;
+        border: none;
+        box-shadow: 0 6px 24px rgba(99,102,241,0.45);
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .hero-btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(99,102,241,0.55);
+        color: #fff;
+    }
+    .hero-btn-secondary {
+        padding: 14px 36px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        background: rgba(255,255,255,0.06);
+        color: rgba(255,255,255,0.85);
+        border: 1px solid rgba(255,255,255,0.12);
+        backdrop-filter: blur(8px);
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .hero-btn-secondary:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.2);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+    .hero-stats {
+        display: flex;
+        gap: 32px;
+        margin-top: 48px;
+        padding-top: 36px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .hero-stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #fff;
+        line-height: 1;
+    }
+    .hero-stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted-light);
+        margin-top: 4px;
+    }
+
+    /* Hero visual panel */
+    .hero-visual {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hero-mockup {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 24px;
+        padding: 24px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 32px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+        width: 100%;
+        max-width: 480px;
+        animation: heroMockupFloat 6s ease-in-out infinite;
+    }
+    @@keyframes heroMockupFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-12px); }
+    }
+    .mockup-topbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+    .mockup-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+    }
+    .mockup-dot.red { background: #F43F5E; }
+    .mockup-dot.yellow { background: #F59E0B; }
+    .mockup-dot.green { background: #10B981; }
+    .mockup-title {
+        margin-left: 8px;
+        font-size: 0.78rem;
+        color: rgba(255,255,255,0.4);
+        font-weight: 500;
+    }
+    .scan-zone {
+        background: rgba(99,102,241,0.05);
+        border: 1.5px dashed rgba(99,102,241,0.4);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+        overflow: hidden;
+    }
+    .scan-face-box {
+        width: 100px; height: 100px;
+        border: 2px solid var(--accent);
+        border-radius: 12px;
+        position: relative;
+        box-shadow: 0 0 16px rgba(99,102,241,0.3), inset 0 0 16px rgba(99,102,241,0.1);
+    }
+    .scan-face-box::before {
+        content: '\F4AA'; /* bi-person-circle */
+        font-family: 'bootstrap-icons';
+        font-size: 3.5rem;
+        color: rgba(99,102,241,0.5);
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%,-50%);
+    }
+    /* Corner markers */
+    .scan-corner {
+        position: absolute;
+        width: 16px; height: 16px;
+        border-color: var(--accent3);
+        border-style: solid;
+    }
+    .scan-corner.tl { top: -1px; left: -1px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .scan-corner.tr { top: -1px; right: -1px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .scan-corner.bl { bottom: -1px; left: -1px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .scan-corner.br { bottom: -1px; right: -1px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    /* Scan line */
+    .scan-line {
+        position: absolute;
+        left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        animation: scanLine 2.2s ease-in-out infinite;
+    }
+    @@keyframes scanLine {
+        0% { top: 0%; opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { top: 100%; opacity: 0; }
+    }
+    .scan-label {
+        font-size: 0.8rem;
+        color: var(--text-muted-light);
+        text-align: center;
+    }
+    .scan-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--success);
+    }
+    .scan-pulse {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--success);
+        animation: pulseGlow 1.5s ease-in-out infinite;
+    }
+    @@keyframes pulseGlow {
+        0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+        50% { opacity: 0.8; transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+    }
+    .mockup-list {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .mockup-list-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+    .mockup-avatar {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .mockup-name {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.85);
+        flex-grow: 1;
+    }
+    .mockup-time {
+        font-size: 0.74rem;
+        color: var(--text-muted-light);
+    }
+    .mockup-status-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    /* =========== FEATURES =========== */
+    .lp-section {
+        padding: 100px 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .section-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 14px;
+        border-radius: 30px;
+        background: rgba(99,102,241,0.1);
+        border: 1px solid rgba(99,102,241,0.25);
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #a5b4fc;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 20px;
+    }
+    .section-title {
+        font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 14px;
+        line-height: 1.2;
+    }
+    .section-title .hl {
+        background: linear-gradient(135deg, var(--accent), var(--accent3));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .section-desc {
+        font-size: 1.05rem;
+        color: var(--text-muted-light);
+        max-width: 560px;
+        line-height: 1.7;
+        margin-bottom: 60px;
+    }
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+    .feature-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 20px;
+        padding: 28px;
+        transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+        position: relative;
+        overflow: hidden;
+    }
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, transparent 60%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .feature-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(99,102,241,0.3);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(99,102,241,0.1);
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+    .feature-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 10px;
+    }
+    .feature-desc {
+        font-size: 0.875rem;
+        color: var(--text-muted-light);
+        line-height: 1.65;
+    }
+
+    /* =========== STATS SECTION =========== */
+    .lp-stats-section {
+        padding: 0 60px 100px;
+    }
+    .stats-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.08) 100%);
+        border: 1px solid rgba(99,102,241,0.2);
+        border-radius: 28px;
+        padding: 60px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+    .stats-inner::before {
+        content: '';
+        position: absolute;
+        top: -60px; right: -60px;
+        width: 300px; height: 300px;
+        background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .stat-item {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+    }
+    .stat-number {
+        font-size: 2.8rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, var(--accent), var(--accent3));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-muted-light);
+        font-weight: 500;
+    }
+
+    /* =========== HOW IT WORKS =========== */
+    .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        position: relative;
+    }
+    .steps-grid::before {
+        content: '';
+        position: absolute;
+        top: 32px;
+        left: calc(16.67% + 24px);
+        right: calc(16.67% + 24px);
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent), var(--accent3));
+        opacity: 0.3;
+    }
+    .step-card {
+        text-align: center;
+        padding: 28px 20px;
+    }
+    .step-number {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0 auto 20px;
+        box-shadow: 0 0 24px rgba(99,102,241,0.4);
+        position: relative;
+        z-index: 1;
+    }
+    .step-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 10px;
+    }
+    .step-desc {
+        font-size: 0.875rem;
+        color: var(--text-muted-light);
+        line-height: 1.65;
+    }
+
+    /* =========== CTA SECTION =========== */
+    .lp-cta-section {
+        padding: 0 60px 100px;
+    }
+    .cta-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+        border-radius: 28px;
+        padding: 80px 60px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .cta-inner::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+    }
+    .cta-title {
+        font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+        font-weight: 900;
+        color: #fff;
+        margin-bottom: 16px;
+        position: relative;
+        z-index: 1;
+    }
+    .cta-desc {
+        font-size: 1.05rem;
+        color: rgba(255,255,255,0.8);
+        margin-bottom: 36px;
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+        position: relative;
+        z-index: 1;
+    }
+    .cta-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 44px;
+        border-radius: 14px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        background: #fff;
+        color: var(--accent);
+        text-decoration: none;
+        transition: all 0.25s ease;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        position: relative;
+        z-index: 1;
+    }
+    .cta-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+        color: var(--accent2);
+    }
+
+    /* =========== FOOTER =========== */
+    .lp-footer {
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding: 32px 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .lp-footer p {
+        font-size: 0.85rem;
+        color: var(--text-muted-light);
+        margin: 0;
+    }
+    .lp-footer-links {
+        display: flex;
+        gap: 24px;
+    }
+    .lp-footer-links a {
+        font-size: 0.85rem;
+        color: var(--text-muted-light);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .lp-footer-links a:hover { color: #fff; }
+
+    /* Mobile nav menu */
+    .lp-mobile-menu {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15,23,42,0.98);
+        z-index: 1000;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+    }
+    .lp-mobile-menu.open { display: flex; }
+    .lp-mobile-menu a {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .lp-mobile-menu a:hover { color: #fff; }
+    .mobile-menu-close {
+        position: absolute;
+        top: 20px; right: 24px;
+        background: none; border: none;
+        color: rgba(255,255,255,0.6);
+        font-size: 1.8rem;
+        cursor: pointer;
+    }
+
+    /* =========== RESPONSIVE =========== */
+    @@media (max-width: 1024px) {
+        .lp-hero-content { grid-template-columns: 1fr; gap: 40px; padding: 120px 40px 60px; }
+        .hero-visual { display: none; }
+        .features-grid { grid-template-columns: repeat(2, 1fr); }
+        .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+        .steps-grid { grid-template-columns: 1fr; gap: 24px; }
+        .steps-grid::before { display: none; }
+    }
+    @@media (max-width: 768px) {
+        .lp-nav { padding: 16px 24px; }
+        .lp-nav.scrolled { padding: 12px 24px; }
+        .lp-nav-links, .lp-nav-cta { display: none; }
+        .lp-nav-hamburger { display: block; }
+        .lp-section { padding: 70px 24px; }
+        .lp-stats-section { padding: 0 24px 70px; }
+        .lp-cta-section { padding: 0 24px 70px; }
+        .lp-footer { padding: 28px 24px; flex-direction: column; text-align: center; }
+        .features-grid { grid-template-columns: 1fr; }
+        .stats-inner { grid-template-columns: repeat(2, 1fr); padding: 36px 24px; gap: 24px; }
+        .stat-number { font-size: 2rem; }
+        .cta-inner { padding: 48px 24px; }
+        .hero-stats { flex-direction: row; flex-wrap: wrap; gap: 20px; }
+    }
+    @@media (max-width: 480px) {
+        .lp-hero-content { padding: 100px 20px 50px; }
+        .hero-buttons { flex-direction: column; align-items: stretch; }
+        .hero-btn-primary, .hero-btn-secondary { justify-content: center; }
+        .stats-inner { grid-template-columns: repeat(2, 1fr); }
+        .lp-footer-links { flex-wrap: wrap; justify-content: center; gap: 14px; }
+    }
+</style>
+}
+
+<!-- Mobile Menu -->
+<div class="lp-mobile-menu" id="mobileMenu">
+    <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu"><i class="bi bi-x"></i></button>
+    <a href="#features" onclick="document.getElementById('mobileMenu').classList.remove('open')">Features</a>
+    <a href="#how-it-works" onclick="document.getElementById('mobileMenu').classList.remove('open')">How It Works</a>
+    <a href="#stats" onclick="document.getElementById('mobileMenu').classList.remove('open')">Stats</a>
+    <a asp-controller="Auth" asp-action="Login" class="hero-btn-primary" style="font-size:1rem;padding:12px 32px;">
+        <i class="bi bi-box-arrow-in-right"></i> Login to System
+    </a>
+</div>
+
+<!-- NAVBAR -->
+<nav class="lp-nav" id="lpNav">
+    <a href="/" class="lp-brand">
+        <div class="lp-brand-icon"><i class="bi bi-clock-history" style="color:#fff;"></i></div>
+        <span class="lp-brand-name"><span>CompVision</span> Attendace System</span>
+    </a>
+    <ul class="lp-nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#stats">Stats</a></li>
+    </ul>
+    <div class="lp-nav-cta">
+        <a asp-controller="Auth" asp-action="Login" class="lp-btn-login">
+            <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+    </div>
+    <button class="lp-nav-hamburger" id="hamburgerBtn" aria-label="Open menu">
+        <i class="bi bi-list"></i>
+    </button>
+</nav>
+
+<!-- HERO -->
+<section class="lp-hero">
+    <div class="lp-hero-bg"></div>
+    <div class="lp-hero-gradient"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-orb hero-orb-3"></div>
+
+    <div class="lp-hero-content">
+        <!-- Left: Text -->
+        <div>
+            <div class="hero-badge">
+                <i class="bi bi-stars"></i> AI-Powered Face Recognition
+            </div>
+            <h1 class="hero-title">
+                Smarter Attendance<br>for the <span class="hl">Modern Era</span>
+            </h1>
+            <p class="hero-desc">
+                Automate attendance tracking for students and employees with AI face recognition.
+                Real-time reporting, multi-branch support, and a stunning dashboard — all in one system.
+            </p>
+            <div class="hero-buttons">
+                <a asp-controller="Auth" asp-action="Login" class="hero-btn-primary">
+                    <i class="bi bi-box-arrow-in-right"></i> Get Started — Login
+                </a>
+                <a href="#features" class="hero-btn-secondary">
+                    <i class="bi bi-play-circle"></i> Explore Features
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div>
+                    <div class="hero-stat-value">99.7%</div>
+                    <div class="hero-stat-label">Recognition Accuracy</div>
+                </div>
+                <div>
+                    <div class="hero-stat-value">&lt; 1s</div>
+                    <div class="hero-stat-label">Check-in Speed</div>
+                </div>
+                <div>
+                    <div class="hero-stat-value">24/7</div>
+                    <div class="hero-stat-label">Real-time Reports</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Animated mockup panel -->
+        <div class="hero-visual">
+            <div class="hero-mockup">
+                <div class="mockup-topbar">
+                    <div class="mockup-dot red"></div>
+                    <div class="mockup-dot yellow"></div>
+                    <div class="mockup-dot green"></div>
+                    <span class="mockup-title">AI Face Recognition — Live Check-In</span>
+                </div>
+                <div class="scan-zone">
+                    <div class="scan-line"></div>
+                    <div class="scan-face-box">
+                        <div class="scan-corner tl"></div>
+                        <div class="scan-corner tr"></div>
+                        <div class="scan-corner bl"></div>
+                        <div class="scan-corner br"></div>
+                    </div>
+                    <div class="scan-label">Position face within the frame</div>
+                    <div class="scan-status">
+                        <div class="scan-pulse"></div> System Active — Scanning...
+                    </div>
+                </div>
+                <div class="mockup-list">
+                    <div class="mockup-list-item">
+                        <div class="mockup-avatar" style="background:rgba(99,102,241,0.15);color:#a5b4fc;">AH</div>
+                        <div class="mockup-name">Ahmed Hassan</div>
+                        <div class="mockup-time">08:02 AM</div>
+                        <div class="mockup-status-dot" style="background:#10B981;"></div>
+                    </div>
+                    <div class="mockup-list-item">
+                        <div class="mockup-avatar" style="background:rgba(16,185,129,0.12);color:#6EE7B7;">SM</div>
+                        <div class="mockup-name">Sara Mohamed</div>
+                        <div class="mockup-time">08:07 AM</div>
+                        <div class="mockup-status-dot" style="background:#10B981;"></div>
+                    </div>
+                    <div class="mockup-list-item">
+                        <div class="mockup-avatar" style="background:rgba(245,158,11,0.12);color:#FCD34D;">KA</div>
+                        <div class="mockup-name">Khalid Ali</div>
+                        <div class="mockup-time">08:14 AM</div>
+                        <div class="mockup-status-dot" style="background:#F59E0B;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+    <div class="lp-section">
+        <div class="section-label"><i class="bi bi-lightning-charge-fill"></i> Core Features</div>
+        <h2 class="section-title">Everything You Need to<br><span class="hl">Run Attendance at Scale</span></h2>
+        <p class="section-desc">From AI face scanning to detailed CSV exports and multi-branch management — built for modern educational institutions.</p>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon" style="background:rgba(99,102,241,0.12);color:var(--accent);">
+                    <i class="bi bi-camera-video-fill"></i>
+                </div>
+                <div class="feature-title">AI Face Recognition</div>
+                <div class="feature-desc">Automatically identify and mark attendance using computer vision and AI face matching — no card scanning needed.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:rgba(6,182,212,0.12);color:var(--accent3);">
+                    <i class="bi bi-bar-chart-line-fill"></i>
+                </div>
+                <div class="feature-title">Real-time Reports & Insights</div>
+                <div class="feature-desc">Track attendance rates, tardiness, and absences with beautiful charts and exportable CSV reports.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:rgba(16,185,129,0.12);color:var(--success);">
+                    <i class="bi bi-building-fill"></i>
+                </div>
+                <div class="feature-title">Multi-Branch Support</div>
+                <div class="feature-desc">Manage multiple campuses or office branches from a single admin dashboard with role-based access control.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:rgba(139,92,246,0.12);color:var(--accent2);">
+                    <i class="bi bi-calendar-week-fill"></i>
+                </div>
+                <div class="feature-title">Lesson Scheduling</div>
+                <div class="feature-desc">Schedule lessons with start/end times, day of week, and date ranges. View in List, Grid, or Calendar mode.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:rgba(245,158,11,0.12);color:var(--warning);">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="feature-title">Student & Employee Tracking</div>
+                <div class="feature-desc">Separate attendance workflows for students and staff — each with their own reporting, history, and records.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:rgba(244,63,94,0.12);color:var(--danger);">
+                    <i class="bi bi-phone-fill"></i>
+                </div>
+                <div class="feature-title">Fully Responsive Design</div>
+                <div class="feature-desc">Access your attendance dashboard from any device — desktop, tablet, or mobile with a seamless adaptive UI.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATS -->
+<section id="stats" class="lp-stats-section">
+    <div class="stats-inner">
+        <div class="stat-item">
+            <div class="stat-number">50K+</div>
+            <div class="stat-label">Students Tracked Daily</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">99.7%</div>
+            <div class="stat-label">AI Recognition Accuracy</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">200+</div>
+            <div class="stat-label">Institutions Using AttendIQ</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">0.8s</div>
+            <div class="stat-label">Average Check-in Time</div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works">
+    <div class="lp-section">
+        <div class="section-label"><i class="bi bi-diagram-3-fill"></i> How It Works</div>
+        <h2 class="section-title">Three Steps to<br><span class="hl">Effortless Attendance</span></h2>
+        <p class="section-desc">Our streamlined process makes tracking attendance faster and more reliable than ever before.</p>
+
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-title">Register & Enroll</div>
+                <div class="step-desc">Add students and employees to the system. Upload their photos for AI face model training with just a few clicks.</div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-title">AI Scans & Identifies</div>
+                <div class="step-desc">Our computer vision system scans faces in real time or from uploaded images, instantly matching them against enrolled profiles.</div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-title">Review Reports</div>
+                <div class="step-desc">View attendance summaries, export CSV data, and drill down into individual records with powerful filtering tools.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="lp-cta-section">
+    <div class="cta-inner">
+        <h2 class="cta-title">Ready to Transform Your Attendance?</h2>
+        <p class="cta-desc">Join thousands of institutions already using AttendIQ to save time and eliminate manual tracking forever.</p>
+        <a asp-controller="Auth" asp-action="Login" class="cta-btn">
+            <i class="bi bi-box-arrow-in-right"></i> Login to Your Dashboard
+        </a>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="lp-footer">
+        <p>&copy; @DateTime.Now.Year AttendIQ — AI Attendance Management System. All rights reserved.</p>
+        <div class="lp-footer-links">
+            <a asp-controller="Auth" asp-action="Login">Login</a>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+        </div>
+    </div>
+</footer>
+
+@section Scripts {
+<script>
+    // Navbar scroll shrink
+    const nav = document.getElementById('lpNav');
+    window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Mobile menu
+    document.getElementById('hamburgerBtn').addEventListener('click', () => {
+        document.getElementById('mobileMenu').classList.add('open');
+    });
+    document.getElementById('mobileMenuClose').addEventListener('click', () => {
+        document.getElementById('mobileMenu').classList.remove('open');
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
+    // Counter animation for stat numbers
+    function animateCounters() {
+        document.querySelectorAll('.stat-number').forEach(el => {
+            const text = el.textContent.trim();
+            const match = text.match(/[\d.]+/);
+            if (!match) return;
+            const target = parseFloat(match[0]);
+            const suffix = text.replace(match[0], '');
+            let current = 0;
+            const increment = target / 60;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                el.textContent = (Number.isInteger(target) ? Math.floor(current) : current.toFixed(1)) + suffix;
+            }, 20);
+        });
+    }
+
+    // Trigger counter when stats section is visible
+    const statsObs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { animateCounters(); statsObs.disconnect(); } });
+    }, { threshold: 0.3 });
+    const statsEl = document.getElementById('stats');
+    if (statsEl) statsObs.observe(statsEl);
+
+    // Fade-in cards on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.feature-card, .step-card').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        observer.observe(el);
+    });
+</script>
+}

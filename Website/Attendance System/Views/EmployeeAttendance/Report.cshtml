@@ -1,0 +1,106 @@
+@model Attendance_System.ViewModels.Attendance.AttendanceReportViewModel
+@{
+    ViewData["Title"] = "Employee Attendance Report";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="text-muted font-medium mb-0">Employee Attendance Statistics</h5>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Back to Ledger</a>
+</div>
+
+<!-- KPI Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="custom-card kpi-card kpi-success text-center py-3">
+            <h3 class="fw-bold mb-1 text-success">@Model.TotalPresent</h3>
+            <span class="text-xs text-muted uppercase font-bold">Present</span>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="custom-card kpi-card kpi-warning text-center py-3">
+            <h3 class="fw-bold mb-1 text-warning">@Model.TotalLate</h3>
+            <span class="text-xs text-muted uppercase font-bold">Late</span>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="custom-card kpi-card kpi-danger text-center py-3">
+            <h3 class="fw-bold mb-1 text-danger">@Model.TotalAbsent</h3>
+            <span class="text-xs text-muted uppercase font-bold">Absent</span>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="custom-card kpi-card kpi-info text-center py-3">
+            <h3 class="fw-bold mb-1 text-info">@Model.TotalExcused</h3>
+            <span class="text-xs text-muted uppercase font-bold">Excused</span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="custom-card h-100">
+            <h5 class="card-title">Daily Employee Attendance Trends</h5>
+            <div id="reportTrendChart"></div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="custom-card h-100">
+            <h5 class="card-title">Status Distribution</h5>
+            <div id="reportDistributionChart"></div>
+            <div class="text-center mt-3 pt-2 border-top">
+                <span class="text-sm font-semibold">Total Ratio Success: <span class="text-success">@Model.PresentPercentage%</span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        $(document).ready(function () {
+            // Trend Chart
+            var trendOptions = {
+                series: [{
+                    name: 'Present/Late',
+                    data: @Html.Raw(Json.Serialize(Model.DailyPresentCount))
+                }, {
+                    name: 'Absent',
+                    data: @Html.Raw(Json.Serialize(Model.DailyAbsentCount))
+                }],
+                chart: {
+                    type: 'area',
+                    height: 320,
+                    toolbar: { show: false },
+                    fontFamily: 'Inter, sans-serif'
+                },
+                colors: ['#10B981', '#F43F5E'],
+                stroke: { curve: 'smooth', width: 2 },
+                xaxis: {
+                    categories: @Html.Raw(Json.Serialize(Model.Dates)),
+                    labels: { style: { colors: '#64748B' } }
+                },
+                grid: { borderColor: '#E2E8F0' }
+            };
+            var trendChart = new ApexCharts(document.querySelector("#reportTrendChart"), trendOptions);
+            trendChart.render();
+
+            // Distribution Donut Chart
+            var distOptions = {
+                series: [@Model.TotalPresent, @Model.TotalLate, @Model.TotalAbsent, @Model.TotalExcused],
+                labels: ['Present', 'Late', 'Absent', 'Excused'],
+                chart: {
+                    type: 'donut',
+                    height: 320,
+                    fontFamily: 'Inter, sans-serif'
+                },
+                colors: ['#10B981', '#F59E0B', '#F43F5E', '#0EA5E9'],
+                legend: { position: 'bottom' },
+                dataLabels: { enabled: false },
+                stroke: { width: 0 }
+            };
+            var distChart = new ApexCharts(document.querySelector("#reportDistributionChart"), distOptions);
+            distChart.render();
+        });
+    </script>
+}
