@@ -5,4 +5,8 @@ face-recognition
 opencv-python
 numpy
 schedule
-mediapipe
+mediapipe==0.10.14
+requests
+python-dotenv
+fastapi==0.111.0
+uvicorn[standard]==0.29.0

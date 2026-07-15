@@ -15,7 +15,7 @@ using Attendance_System.ViewModels.Attendance;
 
 namespace Attendance_System.Controllers
 {
-    [AuthorizedRoles(Roles.Admin)]
+    [AuthorizedRoles(Roles.Admin, Roles.Employee, Roles.Teacher)]
     public class EmployeeAttendanceController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -37,26 +37,36 @@ namespace Attendance_System.Controllers
             var branches = await _unitOfWork.Branches.GetAllAsync();
             var cameras = await _unitOfWork.Cameras.GetAllAsync();
 
-            if (filter.Date.HasValue)
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if ((userRole == Roles.Employee.ToString() || userRole == Roles.Teacher.ToString()) && Guid.TryParse(userIdStr, out Guid employeeId))
             {
-                records = records.Where(r => r.CreatedAt.Date == filter.Date.Value.Date);
+                records = records.Where(r => r.EmployeeId == employeeId);
             }
-            if (filter.Status.HasValue)
+            else
             {
-                records = records.Where(r => r.Status == filter.Status.Value);
-            }
-            if (filter.BranchId.HasValue)
-            {
-                var employeeIdsInBranch = employees.Where(e => e.BranchId == filter.BranchId.Value).Select(e => e.Id);
-                records = records.Where(r => employeeIdsInBranch.Contains(r.EmployeeId));
-            }
-            if (!string.IsNullOrEmpty(filter.SearchQuery))
-            {
-                var matchedEmployeeIds = employees
-                    .Where(e => e.Fullname.Contains(filter.SearchQuery, StringComparison.OrdinalIgnoreCase) || 
-                                e.Username.Contains(filter.SearchQuery, StringComparison.OrdinalIgnoreCase))
-                    .Select(e => e.Id);
-                records = records.Where(r => matchedEmployeeIds.Contains(r.EmployeeId));
+                if (filter.Date.HasValue)
+                {
+                    records = records.Where(r => r.CreatedAt.Date == filter.Date.Value.Date);
+                }
+                if (filter.Status.HasValue)
+                {
+                    records = records.Where(r => r.Status == filter.Status.Value);
+                }
+                if (filter.BranchId.HasValue)
+                {
+                    var employeeIdsInBranch = employees.Where(e => e.BranchId == filter.BranchId.Value).Select(e => e.Id);
+                    records = records.Where(r => employeeIdsInBranch.Contains(r.EmployeeId));
+                }
+                if (!string.IsNullOrEmpty(filter.SearchQuery))
+                {
+                    var matchedEmployeeIds = employees
+                        .Where(e => e.Fullname.Contains(filter.SearchQuery, StringComparison.OrdinalIgnoreCase) || 
+                                    e.Username.Contains(filter.SearchQuery, StringComparison.OrdinalIgnoreCase))
+                        .Select(e => e.Id);
+                    records = records.Where(r => matchedEmployeeIds.Contains(r.EmployeeId));
+                }
             }
 
             filter.Results = records.Select(r => {
@@ -93,6 +103,15 @@ namespace Attendance_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (userRole != Roles.Admin.ToString() && record.EmployeeId.ToString() != userIdStr)
+            {
+                TempData["ErrorMessage"] = "You are not authorized to view this record.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var employees = await _unitOfWork.Employees.GetAllAsync();
             var cameras = await _unitOfWork.Cameras.GetAllAsync();
             var baseUsers = await _unitOfWork.BaseUsers.GetAllAsync();
@@ -125,6 +144,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpGet]
+        [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> Create()
         {
             var model = new EmployeeAttendanceFormViewModel();
@@ -135,6 +155,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpPost]
+        [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> Create(EmployeeAttendanceFormViewModel model)
         {
             if (!ModelState.IsValid)
@@ -164,6 +185,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpGet]
+        [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> Edit(Guid id)
         {
             var record = await _unitOfWork.EmployeeAttendances.GetByIdAsync(id);
@@ -190,6 +212,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpPost]
+        [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> Edit(EmployeeAttendanceFormViewModel model)
         {
             if (!ModelState.IsValid)
@@ -222,6 +245,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpPost]
+        [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var record = await _unitOfWork.EmployeeAttendances.GetByIdAsync(id);
@@ -239,6 +263,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpGet]
+        [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> Report()
         {
             var records = await _unitOfWork.EmployeeAttendances.GetAllAsync();
@@ -270,6 +295,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpGet]
+        [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> ExportCsv()
         {
             var records = await _unitOfWork.EmployeeAttendances.GetAllAsync();
@@ -292,6 +318,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpGet]
+        [AuthorizedRoles(Roles.Admin)]
         public IActionResult UploadImage()
         {
             var model = new AIPictureUploadViewModel();
@@ -300,6 +327,7 @@ namespace Attendance_System.Controllers
         }
 
         [HttpPost]
+        [AuthorizedRoles(Roles.Admin)]
         public async Task<IActionResult> UploadImage(AIPictureUploadViewModel model)
         {
             if (model.File == null || model.File.Length == 0)

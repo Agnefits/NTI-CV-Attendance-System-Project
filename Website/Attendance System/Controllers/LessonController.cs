@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -11,7 +12,7 @@ using Attendance_System.ViewModels.Lesson;
 
 namespace Attendance_System.Controllers
 {
-    [AuthorizedRoles(Roles.Admin, Roles.Teacher)]
+    [AuthorizedRoles(Roles.Admin, Roles.Teacher, Roles.Student)]
     public class LessonController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -30,21 +31,43 @@ namespace Attendance_System.Controllers
             var teachers = await _unitOfWork.Employees.GetAllAsync();
             var rooms = await _unitOfWork.ClassRooms.GetAllAsync();
 
-            if (filter.LevelId.HasValue)
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (userRole == Roles.Student.ToString() && Guid.TryParse(userIdStr, out Guid studentId))
             {
-                lessons = lessons.Where(l => l.LevelId == filter.LevelId.Value);
+                var student = await _unitOfWork.Students.GetByIdAsync(studentId);
+                if (student != null)
+                {
+                    lessons = lessons.Where(l => l.LevelId == student.LevelId && (l.ClassId == null || l.ClassId == student.ClassId));
+                }
+                else
+                {
+                    lessons = Enumerable.Empty<Lesson>();
+                }
             }
-            if (filter.ClassId.HasValue)
+            else if (userRole == Roles.Teacher.ToString() && Guid.TryParse(userIdStr, out Guid teacherId))
             {
-                lessons = lessons.Where(l => l.ClassId == filter.ClassId.Value);
+                lessons = lessons.Where(l => l.TeacherId == teacherId);
             }
-            if (filter.TeacherId.HasValue)
+            else
             {
-                lessons = lessons.Where(l => l.TeacherId == filter.TeacherId.Value);
-            }
-            if (filter.DayOfWeek.HasValue)
-            {
-                lessons = lessons.Where(l => l.DayOfWeek == filter.DayOfWeek.Value);
+                if (filter.LevelId.HasValue)
+                {
+                    lessons = lessons.Where(l => l.LevelId == filter.LevelId.Value);
+                }
+                if (filter.ClassId.HasValue)
+                {
+                    lessons = lessons.Where(l => l.ClassId == filter.ClassId.Value);
+                }
+                if (filter.TeacherId.HasValue)
+                {
+                    lessons = lessons.Where(l => l.TeacherId == filter.TeacherId.Value);
+                }
+                if (filter.DayOfWeek.HasValue)
+                {
+                    lessons = lessons.Where(l => l.DayOfWeek == filter.DayOfWeek.Value);
+                }
             }
 
             filter.Results = lessons.Select(l => new LessonListViewModel
@@ -65,7 +88,10 @@ namespace Attendance_System.Controllers
                 EndDate = l.EndDate
             }).ToList();
 
-            await PopulateFilterOptions(filter);
+            if (userRole == Roles.Admin.ToString())
+            {
+                await PopulateFilterOptions(filter);
+            }
 
             ViewData["Title"] = "Lessons List";
             return View(filter);

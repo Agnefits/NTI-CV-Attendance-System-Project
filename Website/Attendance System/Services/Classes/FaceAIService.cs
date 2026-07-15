@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -7,20 +8,21 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Attendance_System.Services.Interfaces;
+using Attendance_System.UnitOfWork.Interfaces;
 
 namespace Attendance_System.Services.Classes
 {
     /// <summary>
     /// HTTP client wrapper for the Python FastAPI face recognition microservice.
-    /// Settings are loaded from the database at runtime (AIServiceBaseUrl, AIModelSecretKey,
-    /// AIModelVersion) — but the HttpClient itself is registered via HttpClientFactory.
+    /// Settings are loaded from the database dynamically at runtime (AIServiceBaseUrl, AIModelSecretKey,
+    /// AIModelVersion).
     /// </summary>
     public class FaceAIService : IFaceAIService
     {
         private readonly HttpClient _httpClient;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<FaceAIService> _logger;
-        private readonly string _secretKey;
-        private readonly string _modelVersion;
 
         // ─── Internal DTOs (mirrors Python FastAPI request/response bodies) ───────
 
@@ -45,22 +47,45 @@ namespace Attendance_System.Services.Classes
 
         public FaceAIService(
             HttpClient httpClient,
+            IUnitOfWork unitOfWork,
             IConfiguration configuration,
             ILogger<FaceAIService> logger)
         {
             _httpClient = httpClient;
+            _unitOfWork = unitOfWork;
+            _configuration = configuration;
             _logger = logger;
+        }
 
-            // These are read from appsettings so they don't require a DB round-trip
-            // on every request. The DB-stored equivalents (AIModelSecretKey, AIModelVersion)
-            // are seeded and can be updated via the Settings UI, but the HttpClient base
-            // address is configured at startup from appsettings.
-            _secretKey    = configuration["FaceAISettings:SecretKey"]    ?? "change-me";
-            _modelVersion = configuration["FaceAISettings:ModelVersion"] ?? "CVFaceRecoV1";
+        private async Task<(string baseUrl, string secretKey, string modelVersion)> GetAISettingsAsync()
+        {
+            string baseUrl = "http://localhost:8000";
+            string secretKey = "change-me";
+            string modelVersion = "CVFaceRecoV1";
 
-            // Attach the secret key to every outgoing request
-            _httpClient.DefaultRequestHeaders.Remove("X-AI-Secret-Key");
-            _httpClient.DefaultRequestHeaders.Add("X-AI-Secret-Key", _secretKey);
+            try
+            {
+                var settings = await _unitOfWork.Settings.GetAllAsync();
+                var settingsList = settings.ToList();
+
+                var baseUrlSetting = settingsList.FirstOrDefault(s => s.Key == "AIServiceBaseUrl")?.Value;
+                var secretKeySetting = settingsList.FirstOrDefault(s => s.Key == "AIModelSecretKey")?.Value;
+                var modelVersionSetting = settingsList.FirstOrDefault(s => s.Key == "AIModelVersion")?.Value;
+
+                if (!string.IsNullOrWhiteSpace(baseUrlSetting)) baseUrl = baseUrlSetting;
+                if (!string.IsNullOrWhiteSpace(secretKeySetting)) secretKey = secretKeySetting;
+                if (!string.IsNullOrWhiteSpace(modelVersionSetting)) modelVersion = modelVersionSetting;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FaceAIService: Error reading AI settings from database, falling back to configuration.");
+                // Fallback to configuration
+                baseUrl = _configuration["FaceAISettings:BaseUrl"] ?? baseUrl;
+                secretKey = _configuration["FaceAISettings:SecretKey"] ?? secretKey;
+                modelVersion = _configuration["FaceAISettings:ModelVersion"] ?? modelVersion;
+            }
+
+            return (baseUrl, secretKey, modelVersion);
         }
 
         /// <inheritdoc/>
@@ -68,8 +93,16 @@ namespace Attendance_System.Services.Classes
         {
             try
             {
-                var request = new EmbedRequest(base64Image, _modelVersion);
-                var response = await _httpClient.PostAsJsonAsync("/api/embed", request);
+                var (baseUrl, secretKey, modelVersion) = await GetAISettingsAsync();
+
+                _httpClient.DefaultRequestHeaders.Remove("X-AI-Secret-Key");
+                _httpClient.DefaultRequestHeaders.Add("X-AI-Secret-Key", secretKey);
+
+                var baseUriStr = baseUrl.TrimEnd('/') + "/";
+                var targetUri = new Uri(new Uri(baseUriStr), "api/embed");
+
+                var request = new EmbedRequest(base64Image, modelVersion);
+                var response = await _httpClient.PostAsJsonAsync(targetUri, request);
                 response.EnsureSuccessStatusCode();
 
                 var result = await response.Content.ReadFromJsonAsync<EmbedResponse>();
@@ -99,11 +132,19 @@ namespace Attendance_System.Services.Classes
         {
             try
             {
+                var (baseUrl, secretKey, modelVersion) = await GetAISettingsAsync();
+
+                _httpClient.DefaultRequestHeaders.Remove("X-AI-Secret-Key");
+                _httpClient.DefaultRequestHeaders.Add("X-AI-Secret-Key", secretKey);
+
+                var baseUriStr = baseUrl.TrimEnd('/') + "/";
+                var targetUri = new Uri(new Uri(baseUriStr), "api/attend");
+
                 var entries = knownEmbeddings.ConvertAll(e =>
                     new AttendEmbeddingEntry(e.UserId.ToString(), e.EmbeddingJson));
 
-                var request  = new AttendRequest(base64Image, _modelVersion, entries);
-                var response = await _httpClient.PostAsJsonAsync("/api/attend", request);
+                var request  = new AttendRequest(base64Image, modelVersion, entries);
+                var response = await _httpClient.PostAsJsonAsync(targetUri, request);
                 response.EnsureSuccessStatusCode();
 
                 var result = await response.Content.ReadFromJsonAsync<AttendResponse>();
@@ -128,11 +169,19 @@ namespace Attendance_System.Services.Classes
         {
             try
             {
+                var (baseUrl, secretKey, modelVersion) = await GetAISettingsAsync();
+
+                _httpClient.DefaultRequestHeaders.Remove("X-AI-Secret-Key");
+                _httpClient.DefaultRequestHeaders.Add("X-AI-Secret-Key", secretKey);
+
+                var baseUriStr = baseUrl.TrimEnd('/') + "/";
+                var targetUri = new Uri(new Uri(baseUriStr), "api/index/rebuild");
+
                 var entries = embeddings.ConvertAll(e =>
                     new AttendEmbeddingEntry(e.UserId.ToString(), e.EmbeddingJson));
 
-                var request  = new RebuildRequest(_modelVersion, entries);
-                var response = await _httpClient.PostAsJsonAsync("/api/index/rebuild", request);
+                var request  = new RebuildRequest(modelVersion, entries);
+                var response = await _httpClient.PostAsJsonAsync(targetUri, request);
                 response.EnsureSuccessStatusCode();
 
                 _logger.LogInformation("FaceAIService: FAISS index rebuilt with {Count} embeddings.", embeddings.Count);
@@ -148,7 +197,15 @@ namespace Attendance_System.Services.Classes
         {
             try
             {
-                var response = await _httpClient.GetAsync("/api/health");
+                var (baseUrl, secretKey, _) = await GetAISettingsAsync();
+
+                _httpClient.DefaultRequestHeaders.Remove("X-AI-Secret-Key");
+                _httpClient.DefaultRequestHeaders.Add("X-AI-Secret-Key", secretKey);
+
+                var baseUriStr = baseUrl.TrimEnd('/') + "/";
+                var targetUri = new Uri(new Uri(baseUriStr), "api/health");
+
+                var response = await _httpClient.GetAsync(targetUri);
                 return response.IsSuccessStatusCode;
             }
             catch

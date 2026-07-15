@@ -11,5 +11,11 @@ namespace Attendance_System.ViewModels.Dashboard
         public int LateToday { get; set; }
         public int TotalCameras { get; set; }
         public List<AttendanceListViewModel> RecentAttendances { get; set; } = new();
+
+        // Scoped / Role-specific attributes
+        public double AttendanceRate { get; set; }
+        public int TotalLessonsOrDays { get; set; }
+        public int AttendedCount { get; set; }
+        public string Role { get; set; } = "Admin";
     }
 }

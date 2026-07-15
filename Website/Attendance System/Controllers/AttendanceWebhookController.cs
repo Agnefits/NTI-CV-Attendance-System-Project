@@ -321,6 +321,32 @@ namespace Attendance_System.Controllers
 
             return Ok(result);
         }
+
+        // ─── GET /api/attendance/employee-windows ────────────────────────────────
+        /// <summary>
+        /// Retrieve the employee check-in and check-out time windows from settings.
+        /// </summary>
+        [HttpGet("employee-windows")]
+        public async Task<IActionResult> GetEmployeeWindows()
+        {
+            if (!IsAuthorized())
+                return Unauthorized(new { message = "Invalid or missing X-AI-Secret-Key." });
+
+            var allSettings = await _unitOfWork.Settings.GetAllAsync();
+
+            var checkInStart  = allSettings.FirstOrDefault(s => s.Key == "EmployeeCheckInStart")?.Value ?? "07:30";
+            var checkInEnd    = allSettings.FirstOrDefault(s => s.Key == "EmployeeCheckInEnd")?.Value ?? "09:30";
+            var checkOutStart = allSettings.FirstOrDefault(s => s.Key == "EmployeeCheckOutStart")?.Value ?? "15:00";
+            var checkOutEnd   = allSettings.FirstOrDefault(s => s.Key == "EmployeeCheckOutEnd")?.Value ?? "19:00";
+
+            return Ok(new
+            {
+                checkInStart,
+                checkInEnd,
+                checkOutStart,
+                checkOutEnd
+            });
+        }
     }
 
     // ─── Shared request DTO ───────────────────────────────────────────────────────

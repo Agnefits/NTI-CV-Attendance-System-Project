@@ -25,9 +25,41 @@ namespace Attendance_System.Controllers
         {
             var settings = await _unitOfWork.Settings.GetAllAsync();
 
+            var keyOrder = new System.Collections.Generic.List<string>
+            {
+                // General
+                "SystemName",
+                "MinAttendancePercentage",
+                "AllowLateArrivals",
+
+                // Attendance Rules
+                "AttendanceStartTime",
+                "LateGracePeriodMinutes",
+                "EmailNotifyAbsences",
+
+                // Employee Time Windows
+                "EmployeeCheckInStart",
+                "EmployeeCheckInEnd",
+                "EmployeeCheckOutStart",
+                "EmployeeCheckOutEnd",
+
+                // AI Recognition Settings
+                "AIServiceBaseUrl",
+                "AIModelVersion",
+                "AIModelSecretKey",
+                "SecurityThreshold",
+                "MinEmbeddingQuality",
+                "LivenessDetectionEnabled"
+            };
+
+            var sortedSettings = settings.OrderBy(s => {
+                var index = keyOrder.IndexOf(s.Key);
+                return index >= 0 ? index : int.MaxValue;
+            }).ToList();
+
             var viewModel = new SettingListViewModel
             {
-                Settings = settings.Select(s => new SettingItemViewModel
+                Settings = sortedSettings.Select(s => new SettingItemViewModel
                 {
                     Key = s.Key,
                     Value = s.Value,
@@ -95,6 +127,24 @@ namespace Attendance_System.Controllers
         {
             if (!ModelState.IsValid)
             {
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Validation for start times being before end times
+            var checkInStart = model.Settings.FirstOrDefault(s => s.Key == "EmployeeCheckInStart")?.Value;
+            var checkInEnd = model.Settings.FirstOrDefault(s => s.Key == "EmployeeCheckInEnd")?.Value;
+            var checkOutStart = model.Settings.FirstOrDefault(s => s.Key == "EmployeeCheckOutStart")?.Value;
+            var checkOutEnd = model.Settings.FirstOrDefault(s => s.Key == "EmployeeCheckOutEnd")?.Value;
+
+            if (TimeSpan.TryParse(checkInStart, out var cis) && TimeSpan.TryParse(checkInEnd, out var cie) && cis >= cie)
+            {
+                TempData["ErrorMessage"] = "Employee Check-in Start Time must be before Check-in End Time.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (TimeSpan.TryParse(checkOutStart, out var cos) && TimeSpan.TryParse(checkOutEnd, out var coe) && cos >= coe)
+            {
+                TempData["ErrorMessage"] = "Employee Check-out Start Time must be before Check-out End Time.";
                 return RedirectToAction(nameof(Index));
             }
 

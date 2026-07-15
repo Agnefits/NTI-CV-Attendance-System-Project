@@ -98,8 +98,20 @@ class LivenessDetector:
             return False
 
 
-# Global detector instance
-detector = LivenessDetector()
+# Global dict of detector instances indexed by camera_id/session_id
+detectors = {}
+
+def get_detector(camera_id="default"):
+    global detectors
+    if camera_id not in detectors:
+        detectors[camera_id] = LivenessDetector()
+    return detectors[camera_id]
+
+def reset_detector(camera_id="default"):
+    get_detector(camera_id).reset()
+
+# Kept for backward compatibility
+detector = get_detector("default")
 
 
 def compute_ear(landmarks, eye_indices):
@@ -139,12 +151,11 @@ def compute_depth_score(landmarks):
     return np.std(z_values)
 
 
-def is_live_face(face_roi_rgb, draw_mesh=False):
+def is_live_face(face_roi_rgb, draw_mesh=False, camera_id="default"):
     """
     Enhanced liveness detection with cooldown.
     Returns: (is_live, depth_score, proc_time, annotated_image, ear, movement_detected)
     """
-    global detector
     start_time = time.time()
     annotated_image = None
     ear = 0.0
@@ -154,8 +165,10 @@ def is_live_face(face_roi_rgb, draw_mesh=False):
     if face_roi_rgb is None or face_roi_rgb.size == 0:
         return False, 0.0, 0.0, None, 0.0, False
 
+    detector_inst = get_detector(camera_id)
+
     # --- Cooldown check (quick return if already confirmed) ---
-    if detector.is_in_cooldown():
+    if detector_inst.is_in_cooldown():
         return True, 0.0, 0.0, None, 0.0, False
 
     # --- Process frame for liveness ---
@@ -167,7 +180,7 @@ def is_live_face(face_roi_rgb, draw_mesh=False):
 
     results = face_mesh.process(face_roi_rgb)
     if not results.multi_face_landmarks:
-        detector.reset()
+        detector_inst.reset()
         return False, 0.0, time.time() - start_time, None, 0.0, False
 
     landmarks = results.multi_face_landmarks[0]
@@ -179,36 +192,36 @@ def is_live_face(face_roi_rgb, draw_mesh=False):
     left_ear = compute_ear(landmarks, LEFT_EYE_INDICES)
     right_ear = compute_ear(landmarks, RIGHT_EYE_INDICES)
     ear = (left_ear + right_ear) / 2.0
-    detector.check_blink(ear)
+    detector_inst.check_blink(ear)
 
     # 3. Head movement
     yaw, pitch, roll = compute_head_pose(landmarks, face_roi_rgb.shape)
-    detector.check_movement(yaw, pitch)
-    movement_detected = detector.movement_detected
+    detector_inst.check_movement(yaw, pitch)
+    movement_detected = detector_inst.movement_detected
 
     # 4. Decision: require depth + (blink or movement)
     challenge_passed = (depth_score > DEPTH_THRESHOLD and
-                        (detector.blink_detected or movement_detected))
+                        (detector_inst.blink_detected or movement_detected))
 
     # Debug print
     print(
         f"Depth: {depth_score:.4f} | "
-        f"Blink: {detector.blink_detected} | "
+        f"Blink: {detector_inst.blink_detected} | "
         f"Move: {movement_detected} | "
         f"ChallengePass: {challenge_passed}"
     )
 
     if challenge_passed:
-        detector.live_counter += 1
-        if detector.live_counter >= LIVE_CONSECUTIVE_REQUIRED:
+        detector_inst.live_counter += 1
+        if detector_inst.live_counter >= LIVE_CONSECUTIVE_REQUIRED:
             # Confirm liveness and start cooldown
-            detector.confirm_liveness()
-            print("[LIVENESS] Confirmed! Face is live (cooldown started).")
+            detector_inst.confirm_liveness()
+            print(f"[LIVENESS - {camera_id}] Confirmed! Face is live (cooldown started).")
             return True, depth_score, time.time() - start_time, annotated_image, ear, movement_detected
     else:
-        detector.live_counter = 0
+        detector_inst.live_counter = 0
         # If we had a false start, reset the flags to avoid re-triggering
         # but keep tracking for next frames
 
     # If we reach here, not live yet
-    return False, depth_score, time.time() - start_time, annotated_image, ear, movement_detected 
+    return False, depth_score, time.time() - start_time, annotated_image, ear, movement_detected

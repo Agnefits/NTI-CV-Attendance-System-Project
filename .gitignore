@@ -111,3 +111,4 @@ $RECYCLE.BIN/
 # Keep placeholder files in otherwise-empty tracked dirs
 # -------------------------------------------------------
 !.gitkeep
+/python-3.12

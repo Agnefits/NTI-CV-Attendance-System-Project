@@ -5,96 +5,209 @@
 
 <!-- Stats Overview Grid -->
 <div class="row mb-4">
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="custom-card kpi-card kpi-info h-100">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="kpi-label">TOTAL STUDENTS</span>
-                    <h3 class="kpi-value">@Model.TotalStudents</h3>
-                </div>
-                <div class="fs-1 text-info opacity-75"><i class="bi bi-mortarboard-fill"></i></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="custom-card kpi-card kpi-success h-100">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="kpi-label">PRESENT TODAY</span>
-                    <h3 class="kpi-value text-success">@Model.PresentToday</h3>
-                </div>
-                <div class="fs-1 text-success opacity-75"><i class="bi bi-check-circle-fill"></i></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="custom-card kpi-card kpi-warning h-100">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="kpi-label">LATE TODAY</span>
-                    <h3 class="kpi-value text-warning">@Model.LateToday</h3>
-                </div>
-                <div class="fs-1 text-warning opacity-75"><i class="bi bi-clock-fill"></i></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="custom-card kpi-card kpi-danger h-100">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="kpi-label">ABSENT TODAY</span>
-                    <h3 class="kpi-value text-danger">@Model.AbsentToday</h3>
-                </div>
-                <div class="fs-1 text-danger opacity-75"><i class="bi bi-x-circle-fill"></i></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Chart Panel -->
-    <div class="col-lg-8 mb-4">
-        <div class="custom-card h-100">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="card-title mb-0">Attendance Daily Trends</h5>
-                <span class="text-xs text-muted">Last 7 Days</span>
-            </div>
-            <div id="attendanceChart" style="min-height: 350px;"></div>
-        </div>
-    </div>
-
-    <!-- Right Summary Cards -->
-    <div class="col-lg-4 mb-4">
-        <div class="custom-card h-100">
-            <h5 class="card-title">AI Camera Monitor</h5>
-            <div class="text-center py-4 mb-3">
-                <i class="bi bi-camera-video-fill text-indigo fs-1 mb-2" style="color: var(--accent);"></i>
-                <h4 class="fw-bold mb-1">@Model.TotalCameras Active</h4>
-                <p class="text-muted text-xs">AI Face Recognition Modules Connected</p>
-            </div>
-            <div class="border-top pt-3">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-sm font-medium"><i class="bi bi-circle-fill text-success me-2 text-xs"></i>Camera Server</span>
-                    <span class="badge bg-success-subtle text-success border border-success">Online</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-sm font-medium"><i class="bi bi-circle-fill text-success me-2 text-xs"></i>Recognition API</span>
-                    <span class="badge bg-success-subtle text-success border border-success">Online</span>
-                </div>
+    @if (Model.Role == "Admin")
+    {
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-info h-100">
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-sm font-medium"><i class="bi bi-circle-fill text-success me-2 text-xs"></i>Sync Status</span>
-                    <span class="badge bg-info-subtle text-info border border-info">Realtime</span>
+                    <div>
+                        <span class="kpi-label">TOTAL STUDENTS</span>
+                        <h3 class="kpi-value">@Model.TotalStudents</h3>
+                    </div>
+                    <div class="fs-1 text-info opacity-75"><i class="bi bi-mortarboard-fill"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-success h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">PRESENT TODAY</span>
+                        <h3 class="kpi-value text-success">@Model.PresentToday</h3>
+                    </div>
+                    <div class="fs-1 text-success opacity-75"><i class="bi bi-check-circle-fill"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-warning h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">LATE TODAY</span>
+                        <h3 class="kpi-value text-warning">@Model.LateToday</h3>
+                    </div>
+                    <div class="fs-1 text-warning opacity-75"><i class="bi bi-clock-fill"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-danger h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">ABSENT TODAY</span>
+                        <h3 class="kpi-value text-danger">@Model.AbsentToday</h3>
+                    </div>
+                    <div class="fs-1 text-danger opacity-75"><i class="bi bi-x-circle-fill"></i></div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Model.Role == "Student" || Model.Role == "Employee")
+    {
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-info h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">ATTENDANCE RATE</span>
+                        <h3 class="kpi-value text-info">@Model.AttendanceRate%</h3>
+                    </div>
+                    <div class="fs-1 text-info opacity-75"><i class="bi bi-percent"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-success h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">DAYS RECORDED</span>
+                        <h3 class="kpi-value text-success">@Model.AttendedCount</h3>
+                    </div>
+                    <div class="fs-1 text-success opacity-75"><i class="bi bi-calendar-check-fill"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-warning h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">TOTAL SCHEDULED</span>
+                        <h3 class="kpi-value text-warning">@Model.TotalLessonsOrDays</h3>
+                    </div>
+                    <div class="fs-1 text-warning opacity-75"><i class="bi bi-journal-check"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-danger h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">ABSENT COUNT</span>
+                        <h3 class="kpi-value text-danger">@(Model.TotalLessonsOrDays - Model.AttendedCount)</h3>
+                    </div>
+                    <div class="fs-1 text-danger opacity-75"><i class="bi bi-calendar-x-fill"></i></div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Model.Role == "Teacher")
+    {
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-info h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">CLASSES TAUGHT</span>
+                        <h3 class="kpi-value text-info">@Model.TotalLessonsOrDays</h3>
+                    </div>
+                    <div class="fs-1 text-info opacity-75"><i class="bi bi-journal-bookmark-fill"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-success h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">STUDENT ATTENDANCE RATE</span>
+                        <h3 class="kpi-value text-success">@Model.AttendanceRate%</h3>
+                    </div>
+                    <div class="fs-1 text-success opacity-75"><i class="bi bi-percent"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-warning h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">STUDENTS PRESENT TODAY</span>
+                        <h3 class="kpi-value text-warning">@Model.PresentToday</h3>
+                    </div>
+                    <div class="fs-1 text-warning opacity-75"><i class="bi bi-people-fill"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="custom-card kpi-card kpi-danger h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="kpi-label">STUDENTS ABSENT TODAY</span>
+                        <h3 class="kpi-value text-danger">@Model.AbsentToday</h3>
+                    </div>
+                    <div class="fs-1 text-danger opacity-75"><i class="bi bi-person-x-fill"></i></div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (Model.Role == "Admin")
+{
+    <div class="row">
+        <!-- Chart Panel -->
+        <div class="col-lg-8 mb-4">
+            <div class="custom-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="card-title mb-0">Attendance Daily Trends</h5>
+                    <span class="text-xs text-muted">Last 7 Days</span>
+                </div>
+                <div id="attendanceChart" style="min-height: 350px;"></div>
+            </div>
+        </div>
+
+        <!-- Right Summary Cards -->
+        <div class="col-lg-4 mb-4">
+            <div class="custom-card h-100">
+                <h5 class="card-title">AI Camera Monitor</h5>
+                <div class="text-center py-4 mb-3">
+                    <i class="bi bi-camera-video-fill text-indigo fs-1 mb-2" style="color: var(--accent);"></i>
+                    <h4 class="fw-bold mb-1">@Model.TotalCameras Active</h4>
+                    <p class="text-muted text-xs">AI Face Recognition Modules Connected</p>
+                </div>
+                <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-sm font-medium"><i class="bi bi-circle-fill text-success me-2 text-xs"></i>Camera Server</span>
+                        <span class="badge bg-success-subtle text-success border border-success">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-sm font-medium"><i class="bi bi-circle-fill text-success me-2 text-xs"></i>Recognition API</span>
+                        <span class="badge bg-success-subtle text-success border border-success">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-sm font-medium"><i class="bi bi-circle-fill text-success me-2 text-xs"></i>Sync Status</span>
+                        <span class="badge bg-info-subtle text-info border border-info">Realtime</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
 
 <!-- Recent Attendances -->
 <div class="custom-card">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="card-title mb-0">Recent Detection Activities</h5>
-        <a asp-controller="Attendance" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3">View All Logs</a>
+        <h5 class="card-title mb-0">
+            @(Model.Role == "Admin" ? "Recent Detection Activities" : "My Recent Attendance Logs")
+        </h5>
+        @if (Model.Role == "Admin")
+        {
+            <a asp-controller="StudentAttendance" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3">View Student Logs</a>
+        }
+        else if (Model.Role == "Student")
+        {
+            <a asp-controller="StudentAttendance" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3">View All My Logs</a>
+        }
+        else
+        {
+            <a asp-controller="EmployeeAttendance" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3">View All My Logs</a>
+        }
     </div>
     <div class="table-responsive-custom">
         <table class="table-custom">
@@ -145,59 +258,62 @@
     </div>
 </div>
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script>
-        $(document).ready(function () {
-            $.ajax({
-                url: '@Url.Action("GetAttendanceChart", "Dashboard")',
-                type: 'GET',
-                dataType: 'json',
-                success: function (data) {
-                    var options = {
-                        series: [{
-                            name: 'Present',
-                            data: data.presentData
-                        }, {
-                            name: 'Late',
-                            data: data.lateData
-                        }, {
-                            name: 'Absent',
-                            data: data.absentData
-                        }],
-                        chart: {
-                            type: 'area',
-                            height: 350,
-                            toolbar: { show: false },
-                            fontFamily: 'Inter, sans-serif'
-                        },
-                        colors: ['#10B981', '#F59E0B', '#F43F5E'],
-                        dataLabels: { enabled: false },
-                        stroke: { curve: 'smooth', width: 2 },
-                        xaxis: {
-                            categories: data.labels,
-                            labels: { style: { colors: '#64748B' } }
-                        },
-                        yaxis: {
-                            labels: { style: { colors: '#64748B' } }
-                        },
-                        tooltip: { x: { format: 'dd MMM yyyy' } },
-                        fill: {
-                            type: 'gradient',
-                            gradient: {
-                                shadeIntensity: 1,
-                                opacityFrom: 0.45,
-                                opacityTo: 0.05,
-                                stops: [0, 100]
-                            }
-                        },
-                        grid: { borderColor: '#E2E8F0' }
-                    };
+@if (Model.Role == "Admin")
+{
+    @section Scripts {
+        <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+        <script>
+            $(document).ready(function () {
+                $.ajax({
+                    url: '@Url.Action("GetAttendanceChart", "Dashboard")',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        var options = {
+                            series: [{
+                                name: 'Present',
+                                data: data.presentData
+                            }, {
+                                name: 'Late',
+                                data: data.lateData
+                            }, {
+                                name: 'Absent',
+                                data: data.absentData
+                            }],
+                            chart: {
+                                type: 'area',
+                                height: 350,
+                                toolbar: { show: false },
+                                fontFamily: 'Inter, sans-serif'
+                            },
+                            colors: ['#10B981', '#F59E0B', '#F43F5E'],
+                            dataLabels: { enabled: false },
+                            stroke: { curve: 'smooth', width: 2 },
+                            xaxis: {
+                                categories: data.labels,
+                                labels: { style: { colors: '#64748B' } }
+                            },
+                            yaxis: {
+                                labels: { style: { colors: '#64748B' } }
+                            },
+                            tooltip: { x: { format: 'dd MMM yyyy' } },
+                            fill: {
+                                type: 'gradient',
+                                gradient: {
+                                    shadeIntensity: 1,
+                                    opacityFrom: 0.45,
+                                    opacityTo: 0.05,
+                                    stops: [0, 100]
+                                }
+                            },
+                            grid: { borderColor: '#E2E8F0' }
+                        };
 
-                    var chart = new ApexCharts(document.querySelector("#attendanceChart"), options);
-                    chart.render();
-                }
+                        var chart = new ApexCharts(document.querySelector("#attendanceChart"), options);
+                        chart.render();
+                    }
+                });
             });
-        });
-    </script>
+        </script>
+    }
 }

@@ -123,6 +123,12 @@
                     <span>My Lessons</span>
                 </a>
             </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "EmployeeAttendance" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                <a asp-controller="EmployeeAttendance" asp-action="Index">
+                    <i class="bi bi-person-workspace"></i>
+                    <span>My Attendance</span>
+                </a>
+            </li>
         }
         else // Student
         {
@@ -130,6 +136,12 @@
                 <a asp-controller="StudentAttendance" asp-action="Index">
                     <i class="bi bi-calendar-check"></i>
                     <span>My Attendance</span>
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Lesson" ? "active" : "")">
+                <a asp-controller="Lesson" asp-action="Index">
+                    <i class="bi bi-journal-bookmark-fill"></i>
+                    <span>My Schedule</span>
                 </a>
             </li>
         }

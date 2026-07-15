@@ -28,38 +28,41 @@
     </div>
 </div>
 
-<!-- Filters Panel -->
-<div class="custom-card mb-4">
-    <form asp-action="Index" method="get" class="row g-3 align-items-end">
-        <div class="col-md-3 form-group">
-            <label class="form-label" for="LevelId">Academic Level</label>
-            <select asp-for="LevelId" asp-items="Model.LevelOptions" class="form-select">
-                <option value="">-- All Levels --</option>
-            </select>
-        </div>
-        <div class="col-md-3 form-group">
-            <label class="form-label" for="ClassId">Class</label>
-            <select asp-for="ClassId" asp-items="Model.ClassOptions" class="form-select">
-                <option value="">-- All Classes --</option>
-            </select>
-        </div>
-        <div class="col-md-3 form-group">
-            <label class="form-label" for="TeacherId">Teacher</label>
-            <select asp-for="TeacherId" asp-items="Model.TeacherOptions" class="form-select">
-                <option value="">-- All Teachers --</option>
-            </select>
-        </div>
-        <div class="col-md-2 form-group">
-            <label class="form-label" for="DayOfWeek">Day of Week</label>
-            <select asp-for="DayOfWeek" asp-items="Model.DayOfWeekOptions" class="form-select">
-                <option value="">-- All Days --</option>
-            </select>
-        </div>
-        <div class="col-md-1">
-            <button type="submit" class="btn btn-primary-custom w-100"><i class="bi bi-funnel-fill"></i></button>
-        </div>
-    </form>
-</div>
+@if (isAdmin)
+{
+    <!-- Filters Panel -->
+    <div class="custom-card mb-4">
+        <form asp-action="Index" method="get" class="row g-3 align-items-end">
+            <div class="col-md-3 form-group">
+                <label class="form-label" for="LevelId">Academic Level</label>
+                <select asp-for="LevelId" asp-items="Model.LevelOptions" class="form-select">
+                    <option value="">-- All Levels --</option>
+                </select>
+            </div>
+            <div class="col-md-3 form-group">
+                <label class="form-label" for="ClassId">Class</label>
+                <select asp-for="ClassId" asp-items="Model.ClassOptions" class="form-select">
+                    <option value="">-- All Classes --</option>
+                </select>
+            </div>
+            <div class="col-md-3 form-group">
+                <label class="form-label" for="TeacherId">Teacher</label>
+                <select asp-for="TeacherId" asp-items="Model.TeacherOptions" class="form-select">
+                    <option value="">-- All Teachers --</option>
+                </select>
+            </div>
+            <div class="col-md-2 form-group">
+                <label class="form-label" for="DayOfWeek">Day of Week</label>
+                <select asp-for="DayOfWeek" asp-items="Model.DayOfWeekOptions" class="form-select">
+                    <option value="">-- All Days --</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary-custom w-100"><i class="bi bi-funnel-fill"></i></button>
+            </div>
+        </form>
+    </div>
+}
 
 <div class="tab-content" id="lessonViewsContent">
     <!-- 1. LIST VIEW TAB -->
